@@ -31,7 +31,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 Mod (min): 22/01/2017 (Barry K Suridge)
 
-Conversion output formatted.
+  * Conversion output formatted.
 
-
+  * This module is a modified version of ".local/lib/pythonx.x/site-packages/supybot/plugins/Math/plugin.py"
+  * If already loaded 'unload math' replace the appropriate file(s) and then 'load math'
 
