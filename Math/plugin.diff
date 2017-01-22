@@ -1,0 +1,15 @@
+352c352
+<             irc.reply(str(newNum))
+---
+>             irc.reply("Converted: {0}".format(self._floatToString(number)) + unit1 + " equals: {0}".format(str(newNum)) + unit2)
+--- plugin.py	2017-01-23 00:17:30.642157000 +1100
++++ ./Math/plugin.py	2017-01-22 23:30:10.714782237 +1100
+@@ -349,7 +349,7 @@
+                 # expected).
+                 newNum = round(newNum, digits + 1 + zeros)
+             newNum = self._floatToString(newNum)
+-            irc.reply(str(newNum))
++            irc.reply("Converted: {0}".format(self._floatToString(number)) + unit1 + " equals: {0}".format(str(newNum)) + unit2)
+         except convertcore.UnitDataError as ude:
+             irc.error(str(ude))
+     convert = wrap(convert, [optional('float', 1.0),'something','to','text'])
