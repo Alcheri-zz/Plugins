@@ -1,0 +1,11 @@
+backup
+build
+test-data
+test-conf
+test-logs
+*.pyc
+*.swp
+*.swo
+*~
+*.mo
+README.txt
