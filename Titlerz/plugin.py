@@ -180,10 +180,10 @@ class Titlerz(callbacks.Plugin):
             try:
                 if urlparse(url).hostname in self.services:
                     longurl = self._longurl(url)
-                    # irc.sendMsg(ircmsgs.privmsg(channel, self._bold(self._green("URL  ")) + ": {0}".format(longurl)))
+                    irc.sendMsg(ircmsgs.privmsg(channel, self._bold(self._green("URL  ")) + ": {0}".format(longurl)))
                 else:
                     shorturl = self._shorturl(url)
-                    # irc.sendMsg(ircmsgs.privmsg(channel, self._bold(self._green("URL  ")) + ": {0}".format(shorturl)))
+                    irc.sendMsg(ircmsgs.privmsg(channel, self._bold(self._green("URL  ")) + ": {0}".format(shorturl)))
                 try:
                     soup = self._getsoup(url) # Open the given URL
                     title = self._cleantitle(soup.title.string) # Cleanup webpage title
