@@ -130,22 +130,35 @@ class Titlerz(callbacks.Plugin):
         """Shrink long URLs."""
         # URL shortening service.
         return self.shortener.short(url)
-
-    def _getdesc(self, soup):
+    
+    def _getdesc(self):
         """Get webpage description - case-insensitive."""
+        global desc, soup
+        des = ''
         # Get webpage description
-        desc = soup.find('meta', attrs={'name': lambda x: x and x.lower()=='description'})
-        if desc:
-            self.log.info("_getdesc DESC IS: {0} TYPE: {1}".format(desc, type(desc)))
-            if desc.get('content'):
-                return desc['content'].strip()
+        des = soup.find('meta', attrs={'name': lambda x: x and x.lower()=='description'})
+        if des:
+            self.log.info("_getdesc DESC IS: {0}".format(des))
+            if des.get('content'):
+                desc = des['content'].strip()
             else:
                 self.log.info("_getdesc: Not returning with content.")
+
+    def _gettitle(self):
+        """Get webpage title."""
+        global title, soup
+        try:
+            title = soup.title.string # Get webpage title
+            self.log.info("TITLE IS: {0}".format(title))
+        except (AttributeError, TypeError):
+            self.log.error("title: " + "Error: AttributeError or TypeError")
+        except AssertionError:
+            self.log.error("title: " + "Error: AssertionError")
 
     def _getsoup(self, url):
         """Get web page."""
         opener = build_opener()
-        opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20100101 Firefox/10.0')]
+        opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Linux x86_64; rv:28.0) Gecko/20100101 Firefox/28.0')]
         req = Request(url)
         # set language for page
         req.add_header('Accept-Language', 'en')
@@ -159,13 +172,14 @@ class Titlerz(callbacks.Plugin):
         """Monitor channel for URLs"""
         channel = msg.args[0]
 
-        global title, desc
+        global title, desc, soup
 
         longurl = ''
         shorturl = ''
         text = ''
         title = ''
         desc = ''
+        soup = ''
 
         # don't react to non-ACTION based messages.
         if ircmsgs.isCtcp(msg) and not ircmsgs.isAction(msg):
@@ -185,9 +199,9 @@ class Titlerz(callbacks.Plugin):
                     shorturl = self._shorturl(url)
                     irc.sendMsg(ircmsgs.privmsg(channel, self._bold(self._green("URL  ")) + ": {0}".format(shorturl)))
                 try:
-                    soup = self._getsoup(url) # Open the given URL
-                    title = self._cleantitle(soup.title.string) # Cleanup webpage title
-                    desc = self._getdesc(soup) # Get webpage description
+                    soup = self._getsoup(url)   # Open the given URL
+                    self._gettitle()            # Get webpage title
+                    self._getdesc()             # Get webpage description
                     if title:
                         irc.sendMsg(ircmsgs.privmsg(channel, self._bold(self._green("TITLE: ")) + title)) # prints: Example Domain
                     if desc:
@@ -210,7 +224,7 @@ class Titlerz(callbacks.Plugin):
         Public test function for Titlez.
         Ex: http://www.google.com
         """
-        global title, desc
+        global title, desc, soup
 
         channel = msg.args[0]
         user = msg.nick
@@ -225,9 +239,9 @@ class Titlerz(callbacks.Plugin):
                 shorturl = self._shorturl(url)
                 irc.reply(self._bold("URL  ") + ": {0}".format(shorturl))
             try:
-                soup = self._getsoup(url) # Open the given URL
-                title = self._cleantitle(soup.title.string) # Cleanup webpage title
-                desc = self._getdesc(soup) # Get webpage description
+                soup = self._getsoup(url)   # Open the given URL
+                self._gettitle()            # Get webpage title
+                self._getdesc()             # Get webpage description
                 if title:
                     irc.reply(self._bold("TITLE: ") + title) # prints: Example Domain
                 if desc:
