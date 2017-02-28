@@ -20,4 +20,7 @@ Setting up
         pyshorteners >> https://github.com/ellisonleao/pyshorteners
         pip install pyshorteners --user --upgrade
 
-
+- 2.) Required Python parser:
+        apt-get install python-lxml
+        easy_install lxml
+        pip install lxml
