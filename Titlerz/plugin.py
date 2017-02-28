@@ -29,7 +29,6 @@ except ImportError:
     from urlparse import urlparse
     from urllib2 import HTTPError, urlopen
 from bs4 import BeautifulSoup
-from urllib.request import build_opener, Request
 # A simple URL shortening Python Lib.
 from pyshorteners import Shortener
 # For error routines
@@ -116,11 +115,6 @@ class Titlerz(callbacks.Plugin):
     #  UTILITIES  #
     ###############
 
-    def _cleantitle(self, title):
-        import re
-        """Clean up the title of a URL."""
-        return re.sub(r'[^\x00-\x7F]+',' ', title)
-
     def _longurl(self, url):
         """Expand short URLs."""
         # URL shortening service.
@@ -137,37 +131,21 @@ class Titlerz(callbacks.Plugin):
         des = ''
         # Get webpage description
         des = soup.find('meta', attrs={'name': lambda x: x and x.lower()=='description'})
-        if des:
-            self.log.info("_getdesc DESC IS: {0}".format(des))
-            if des.get('content'):
-                desc = des['content'].strip()
-            else:
-                self.log.info("_getdesc: Not returning with content.")
+        if des and des.get('content'):
+            desc = des['content'].strip()
+        else:
+            self.log.info("_getdesc: Not returning with content.")
 
     def _gettitle(self):
         """Get webpage title."""
         global title, soup
         try:
             title = soup.title.string # Get webpage title
-            self.log.info("TITLE IS: {0}".format(title))
         except (AttributeError, TypeError):
-            self.log.error("title: " + "Error: AttributeError or TypeError")
+            self.log.error("_gettitle: " + "Error: AttributeError or TypeError")
         except AssertionError:
-            self.log.error("title: " + "Error: AssertionError")
-
-    def _getsoup(self, url):
-        """Get web page."""
-        opener = build_opener()
-        opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Linux x86_64; rv:28.0) Gecko/20100101 Firefox/28.0')]
-        req = Request(url)
-        # set language for page
-        req.add_header('Accept-Language', 'en')
-        response = opener.open(req)
-        page = response.read()
-        soup = BeautifulSoup(page, 'html5lib')
-        # soup = BeautifulSoup(urlopen(url).read(), 'lxml')
-        return soup
-
+            self.log.error("_gettitle: " + "Error: AssertionError")
+            
     def doPrivmsg(self, irc, msg):
         """Monitor channel for URLs"""
         channel = msg.args[0]
@@ -184,7 +162,7 @@ class Titlerz(callbacks.Plugin):
         # don't react to non-ACTION based messages.
         if ircmsgs.isCtcp(msg) and not ircmsgs.isAction(msg):
             return
-        if irc.isChannel(channel):  # must be in channel.
+        if irc.isChannel(channel):     # must be in channel.
             if ircmsgs.isAction(msg):  # if in action, remove.
                 text = ircmsgs.unAction(msg)
             else:
@@ -199,13 +177,13 @@ class Titlerz(callbacks.Plugin):
                     shorturl = self._shorturl(url)
                     irc.sendMsg(ircmsgs.privmsg(channel, self._bold(self._green("URL  ")) + ": {0}".format(shorturl)))
                 try:
-                    soup = self._getsoup(url)   # Open the given URL
-                    self._gettitle()            # Get webpage title
-                    self._getdesc()             # Get webpage description
+                    soup = BeautifulSoup(urlopen(url).read(), 'lxml')  # Open the given URL
+                    self._gettitle()                                   # Get webpage title
+                    self._getdesc()                                    # Get webpage description
                     if title:
-                        irc.sendMsg(ircmsgs.privmsg(channel, self._bold(self._green("TITLE: ")) + title)) # prints: Example Domain
+                        irc.sendMsg(ircmsgs.privmsg(channel, self._bold(self._green("TITLE: ")) + title)) # prints: Title of webpage
                     if desc:
-                        irc.sendMsg(ircmsgs.privmsg(channel, self._bold(self._green("DESC : ")) + desc))
+                        irc.sendMsg(ircmsgs.privmsg(channel, self._bold(self._green("DESC : ")) + desc))  # prints: Webpage description
                 except HTTPError as e:
                     if e.code == 404:
                         irc.sendMsg(ircmsgs.privmsg(channel, self._bold(self._red("ERROR: ")) + "HTTPError: {0} {1}".format(e.reason, e.code)))
@@ -239,11 +217,11 @@ class Titlerz(callbacks.Plugin):
                 shorturl = self._shorturl(url)
                 irc.reply(self._bold("URL  ") + ": {0}".format(shorturl))
             try:
-                soup = self._getsoup(url)   # Open the given URL
-                self._gettitle()            # Get webpage title
-                self._getdesc()             # Get webpage description
+                soup = BeautifulSoup(urlopen(url).read(), 'lxml')  # Open the given URL
+                self._gettitle()                                   # Get webpage title
+                self._getdesc()                                    # Get webpage description
                 if title:
-                    irc.reply(self._bold("TITLE: ") + title) # prints: Example Domain
+                    irc.reply(self._bold("TITLE: ") + title)       # prints: Title of webpage
                 if desc:
                     irc.reply(self._bold("DESC : ") + desc)
             except HTTPError as e:
