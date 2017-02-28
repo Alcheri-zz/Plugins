@@ -331,12 +331,13 @@ class Math(callbacks.Plugin):
         Converts from <unit> to <other unit>. If number isn't given, it
         defaults to 1. For unit information, see 'units' command.
         """
+        deg = u'\xb0'
         try:
             digits = len(str(number).split('.')[1])
         except IndexError:
             digits = 0
         try:
-            newNum = convertcore.convert(number, unit1, unit2)
+            newNum = convertcore.convert(number, unit1.upper(), unit2.upper())
             if isinstance(newNum, float):
                 zeros = 0
                 for char in str(newNum).split('.')[1]:
@@ -349,7 +350,7 @@ class Math(callbacks.Plugin):
                 # expected).
                 newNum = round(newNum, digits + 1 + zeros)
             newNum = self._floatToString(newNum)
-            irc.reply("Converted: {0}".format(self._floatToString(number)) + unit1 + " equals: {0}".format(str(newNum)) + unit2)
+            irc.reply("Converted: {0}".format(self._floatToString(number)) + deg + unit1 + " equals: {0}".format(str(newNum)) + deg + unit2)
         except convertcore.UnitDataError as ude:
             irc.error(str(ude))
     convert = wrap(convert, [optional('float', 1.0),'something','to','text'])
