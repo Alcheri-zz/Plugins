@@ -20,3 +20,5 @@ Setting up
         apt-get install python-lxml
         easy_install lxml
         pip install lxml
+
+https://github.com/reticulatingspline/Supybot-Titler
