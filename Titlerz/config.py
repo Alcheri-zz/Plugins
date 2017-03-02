@@ -28,8 +28,6 @@ Titlerz = conf.registerPlugin('Titlerz')
 # This is where your configuration variables (if any) should go.  For example:
 # conf.registerGlobalValue(Titlerz, 'someConfigVariableName',
 #     registry.Boolean(False, _("""Help for someConfigVariableName.""")))
-conf.registerGlobalValue(Titlerz, 'bitlyLogin', registry.String('', _("""bitly login"""), private=True))
-conf.registerGlobalValue(Titlerz, 'bitlyApiKey', registry.String('', _("""bitly key"""), private=True))
-conf.registerGlobalValue(Titlerz, 'bitlyToken', registry.String('', _("""bitly token"""), private=True))
+
 
 # vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:
