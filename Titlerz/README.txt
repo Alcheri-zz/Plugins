@@ -1,6 +1,7 @@
 A simple Python test plugin for Limnoria bot.
 
 Configure plugin for bitly URL services (if needed):
+The defaults are for TinyURL.com Shortener (No login or api key needed)
 
 /msg <bot> config plugins.Titlerz.bitlyLogin <user_name>
 /msg <bot> config plugins.Titlerz.bitlyApiKey <api_key>
