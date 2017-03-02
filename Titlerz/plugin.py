@@ -41,9 +41,6 @@ class Titlerz(callbacks.Plugin):
         self.__parent = super(Titlerz, self)
         self.__parent.__init__(irc)
         self.encoding = 'utf8'  # irc output.
-        self.bitlylogin = self.registryValue('bitlyLogin')
-        self.bitlyapikey = self.registryValue('bitlyApiKey')
-        self.bitlytoken = self.registryValue('bitlyToken')
 
         # URL pyshorteners libraries.
         self.shortener = Shortener('Tinyurl')
@@ -132,11 +129,6 @@ class Titlerz(callbacks.Plugin):
         desc = desc.replace('\n', '').replace('\r', '')
         return desc
 
-    def _longurl(self, url):
-        """Expand short URLs."""
-        # URL shortening service.
-        return self.shortener.expand(url)
-
     def _shorturl(self, url):
         """Shrink long URLs."""
         # URL shortening service.
@@ -168,12 +160,11 @@ class Titlerz(callbacks.Plugin):
 
         global title, desc, soup
 
-        longurl = ''
         shorturl = ''
-        text = ''
-        title = ''
-        desc = ''
-        soup = ''
+        text     = ''
+        title    = ''
+        desc     = ''
+        soup     = ''
 
         # don't react to non-ACTION based messages.
         if ircmsgs.isCtcp(msg) and not ircmsgs.isAction(msg):
@@ -186,10 +177,8 @@ class Titlerz(callbacks.Plugin):
 
         for url in utils.web.urlRe.findall(text):
             try:
-                if urlparse(url).hostname in self.services:
-                    longurl = self._longurl(url)
-                else:
-                    shorturl = self._shorturl(url).replace('http://', '')
+                if urlparse(url).hostname not in self.services:
+                    shorturl = self._shorturl(url).replace('http://', '')                   
                 soup = BeautifulSoup(urlopen(url).read(), 'lxml')  # Open the given URL
                 self._gettitle()                                   # Get webpage title
                 self._getdesc()                                    # Get webpage description
@@ -210,28 +199,26 @@ class Titlerz(callbacks.Plugin):
         """
         global title, desc, soup
 
-        channel = msg.args[0]
-        user = msg.nick
+        shorturl = ''
+        channel  = msg.args[0]
+        user     = msg.nick
 
         # self.log.info("Titlez: Trying to open: {0}".format(url))
 
         try:
-            if urlparse(url).hostname in self.services:
-                longurl = self._longurl(url)
-                irc.reply(self._bold("URL  ") + ": {0}".format(longurl))
-            else:
-                shorturl = self._shorturl(url)
-                irc.reply(self._bold("URL  ") + ": {0}".format(shorturl))
+            if urlparse(url).hostname not in self.services:
+                shorturl = self._shorturl(url).replace('http://', '')
             soup = BeautifulSoup(urlopen(url).read(), 'lxml')  # Open the given URL
             self._gettitle()                                   # Get webpage title
             self._getdesc()                                    # Get webpage description
             if title:
-                irc.reply(self._bold("TITLE: ") + title)       # prints: Title of webpage
+                s = self._bold("TITLE: ") + title
+                irc.reply(s + " [{0}]".format(shorturl) if shorturl else s)  # prints: Title of webpage
             if desc:
-                irc.reply(self._bold("DESC : ") + desc)
-        except Exception as e:
-            irc.reply(self._bold(self._red("ERROR: ")) + "{0}".format(e.reason), prefixNick=False)
-            self.log.error("ERROR: {0}".format(e.reason))
+                irc.reply(self._bold("DESC : ") + desc)                      # prints: Webpage description
+        except Exception as err:
+            irc.reply(self._bold(self._red("ERROR: ")) + "{0}".format(err), prefixNick=False)
+            self.log.error("ERROR: {0}".format(err))
 
     url = wrap(url, [('text')])
 
