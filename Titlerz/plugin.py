@@ -23,11 +23,10 @@ try:
     # For Python 3.0 and later
     from urllib.request import urlopen
     from urllib.parse import urlparse
-    from urllib.error import HTTPError
 except ImportError:
     # Fall back to Python 2
     from urlparse import urlparse
-    from urllib2 import HTTPError, urlopen
+    from urllib2 import urlopen
 # Python library for pulling data out of HTML and XML files
 from bs4 import BeautifulSoup
 # A simple URL shortening Python Lib.
@@ -150,7 +149,6 @@ class Titlerz(callbacks.Plugin):
         # Get webpage description
         des = soup.find('meta', attrs={'name': lambda x: x and x.lower()=='description'})
         if des and des.get('content'):
-            # desc = des['content'].strip()
             desc = self._cleandesc(des['content'].strip())
         else:
             self.log.info("_getdesc: Not returning with content.")
