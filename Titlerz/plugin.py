@@ -28,6 +28,7 @@ except ImportError:
     # Fall back to Python 2
     from urlparse import urlparse
     from urllib2 import HTTPError, urlopen
+# Python library for pulling data out of HTML and XML files
 from bs4 import BeautifulSoup
 # A simple URL shortening Python Lib.
 from pyshorteners import Shortener
@@ -100,8 +101,12 @@ class Titlerz(callbacks.Plugin):
         return ircutils.mircColor(string, 'blue')
 
     def _bold(self, string):
-        """Returns a bold string."""
+        """Returns a non-bold string."""
         return ircutils.bold(string)
+
+    def _nobold(self, string):
+        """Returns a bold string."""
+        return ircutils.stripBold(string)
 
     def _ul(self, string):
         """Returns an underline string."""
@@ -114,6 +119,19 @@ class Titlerz(callbacks.Plugin):
     ###############
     #  UTILITIES  #
     ###############
+
+    def _cleantitle(self, msg):
+        import re
+        """Clean up the title of a URL."""
+
+        cleaned = msg.translate(dict.fromkeys(range(32))).strip()
+        return re.sub(r'\s+', ' ', cleaned)
+    
+    def _cleandesc(self, desc):
+        """Tidies up description string."""
+
+        desc = desc.replace('\n', '').replace('\r', '')
+        return desc
 
     def _longurl(self, url):
         """Expand short URLs."""
@@ -132,7 +150,8 @@ class Titlerz(callbacks.Plugin):
         # Get webpage description
         des = soup.find('meta', attrs={'name': lambda x: x and x.lower()=='description'})
         if des and des.get('content'):
-            desc = des['content'].strip()
+            # desc = des['content'].strip()
+            desc = self._cleandesc(des['content'].strip())
         else:
             self.log.info("_getdesc: Not returning with content.")
 
@@ -140,11 +159,10 @@ class Titlerz(callbacks.Plugin):
         """Get webpage title."""
         global title, soup
         try:
-            title = soup.title.string # Get webpage title
-        except (AttributeError, TypeError):
-            self.log.error("_gettitle: " + "Error: AttributeError or TypeError")
-        except AssertionError:
-            self.log.error("_gettitle: " + "Error: AssertionError")
+            title = self._cleantitle(soup.title.string) # Get webpage title
+        except Exception as e:
+            irc.reply(self._bold(self._red("ERROR: ")) + "{0}".format(e.reason), prefixNick=False)
+            self.log.error("ERROR: {0}".format(e.reason))
             
     def doPrivmsg(self, irc, msg):
         """Monitor channel for URLs"""
@@ -172,29 +190,19 @@ class Titlerz(callbacks.Plugin):
             try:
                 if urlparse(url).hostname in self.services:
                     longurl = self._longurl(url)
-                    irc.sendMsg(ircmsgs.privmsg(channel, self._bold(self._green("URL  ")) + ": {0}".format(longurl)))
                 else:
-                    shorturl = self._shorturl(url)
-                    irc.sendMsg(ircmsgs.privmsg(channel, self._bold(self._green("URL  ")) + ": {0}".format(shorturl)))
-                try:
-                    soup = BeautifulSoup(urlopen(url).read(), 'lxml')  # Open the given URL
-                    self._gettitle()                                   # Get webpage title
-                    self._getdesc()                                    # Get webpage description
-                    if title:
-                        irc.sendMsg(ircmsgs.privmsg(channel, self._bold(self._green("TITLE: ")) + title)) # prints: Title of webpage
-                    if desc:
-                        irc.sendMsg(ircmsgs.privmsg(channel, self._bold(self._green("DESC : ")) + desc))  # prints: Webpage description
-                except HTTPError as e:
-                    if e.code == 404:
-                        irc.sendMsg(ircmsgs.privmsg(channel, self._bold(self._red("ERROR: ")) + "HTTPError: {0} {1}".format(e.reason, e.code)))
-                        self.log.error("_getsoup: " + "HTTPError: {0} {1}".format(e.reason, e.code))
-                    else:
-                        raise MyException("There was an error: %r" % e)
-            except requests.exceptions.Timeout: # Timeout error
-                irc.sendMsg(ircmsgs.privmsg(channel, self._bold(self._red("ERROR: ")) + "Connection Timed Out"))
-                self.log.error("ERROR: Connection Timed Out")
-            except ValueError as err:
-                irc.reply("{0}".format(err))
+                    shorturl = self._shorturl(url).replace('http://', '')
+                soup = BeautifulSoup(urlopen(url).read(), 'lxml')  # Open the given URL
+                self._gettitle()                                   # Get webpage title
+                self._getdesc()                                    # Get webpage description
+                if title:
+                    s = self._bold(self._green("TITLE: ")) + title
+                    irc.reply(s + " [{0}]".format(shorturl) if shorturl else s, prefixNick=False)  # prints: Title of webpage
+                if desc:
+                    irc.reply(self._bold(self._green("DESC : ")) + desc, prefixNick=False)         # prints: Webpage description
+            except Exception as e:
+                irc.reply(self._bold(self._red("ERROR: ")) + "{0}".format(e.reason), prefixNick=False)
+                self.log.error("ERROR: {0}".format(e.reason))
 
     def url(self, irc, msg, args, url):
         """<url>
@@ -216,33 +224,18 @@ class Titlerz(callbacks.Plugin):
             else:
                 shorturl = self._shorturl(url)
                 irc.reply(self._bold("URL  ") + ": {0}".format(shorturl))
-            try:
-                soup = BeautifulSoup(urlopen(url).read(), 'lxml')  # Open the given URL
-                self._gettitle()                                   # Get webpage title
-                self._getdesc()                                    # Get webpage description
-                if title:
-                    irc.reply(self._bold("TITLE: ") + title)       # prints: Title of webpage
-                if desc:
-                    irc.reply(self._bold("DESC : ") + desc)
-            except HTTPError as e:
-               if e.code == 404:
-                   irc.reply(self._bold(self._red("_getsoup: ")) + "HTTPError: {0} {1}".format(e.reason, e.code))
-                   self.log.error("_getsoup: " + "HTTPError: {0} {1}".format(e.reason, e.code))
-               else:
-                  raise MyException("There was an error: %r" % e)
-        except requests.exceptions.Timeout: # Timeout error
-            irc.reply(self._red("ERROR: ") + "Connection Timed Out")
-            self.log.error("ERROR: Connection Timed Out")
-        except ValueError as err:
-            irc.reply("{0}".format(err))
+            soup = BeautifulSoup(urlopen(url).read(), 'lxml')  # Open the given URL
+            self._gettitle()                                   # Get webpage title
+            self._getdesc()                                    # Get webpage description
+            if title:
+                irc.reply(self._bold("TITLE: ") + title)       # prints: Title of webpage
+            if desc:
+                irc.reply(self._bold("DESC : ") + desc)
+        except Exception as e:
+            irc.reply(self._bold(self._red("ERROR: ")) + "{0}".format(e.reason), prefixNick=False)
+            self.log.error("ERROR: {0}".format(e.reason))
 
     url = wrap(url, [('text')])
-
-class HTTPErrorException(Exception):
-    pass
-
-class MyException(Exception):
-    pass
 
 Class = Titlerz
 
