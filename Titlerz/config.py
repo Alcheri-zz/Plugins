@@ -28,6 +28,7 @@ Titlerz = conf.registerPlugin('Titlerz')
 # This is where your configuration variables (if any) should go.  For example:
 # conf.registerGlobalValue(Titlerz, 'someConfigVariableName',
 #     registry.Boolean(False, _("""Help for someConfigVariableName.""")))
-
+conf.registerChannelValue(Titlerz, 'enable',
+    registry.Boolean(False, """Should plugin work in this channel?"""))
 
 # vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:
