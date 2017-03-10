@@ -14,20 +14,16 @@ python:
 addons:
   apt:
     packages:
-    # For SysDNS tests
-    - unbound-host
+    - python-pypy.translator.sandbox
 
 install:
     - pip install -vr requirements.txt
 
-# Some plugins use external APIs, and can cause tests to fail due to them being slow/down.
-# --no-network disables these, and we can still allow tests that have network access to fail.
-env:
-    - SYSDNS_HOST_COMMAND="/usr/bin/unbound-host" TEST_ARGS="--no-network"
-    - SYSDNS_HOST_COMMAND="/usr/bin/unbound-host" TEST_ARGS=""
-
 script:
-    - supybot-test -c --plugins-dir=. $TEST_ARGS --exclude=./OnJoin
+  - echo $TRAVIS_PYTHON_VERSION
+  - export PYTHON_MAJOR_VERSION=$(python -c "import sys;print(sys.version_info[0])")
+  - echo $PYTHON_MAJOR_VERSION
+  - supybot-test -c --plugins-dir=. $TEST_ARGS --exclude=./Math --exclude=./OnJoin
 
 notifications:
     email: false
@@ -39,9 +35,3 @@ matrix:
         - python: "pypy"
         - python: "pypy3"
         - python: "nightly"
-        - env: SYSDNS_HOST_COMMAND="/usr/bin/unbound-host" TEST_ARGS=""
-
-branches:
-  except:
-    - /^archive(-|\/).*$/
-    - /^wip\/.*$/
