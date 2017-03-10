@@ -1,6 +1,14 @@
 # A simple Web Title Snarfer.
 
-This plugin uses pyshorteners as an enhancement to output. The defaults are for TinyURL.com (No login or api key needed).
+This plugin uses TinyURL as an enhancement to output.
+
+Configuring
+===========
+
+* Enable/Disable for specific channels: config supybot.plugins.Titlerz.enable True or False (or On or Off
+* In channel: [command prefix or BotNick]config channel #channel plugins.titlerz.enable True or False (or On or Off)
+              [command prefix] May be set via 'config reply.whenAddressedBy.chars'
+* Options   : enable or disable
 
 Setting up
 ==========
@@ -9,8 +17,6 @@ Setting up
 
     - BeautifulSoup (make a change if you install them locally like I do)
       *  pip install beautifulsoup4 --user --upgrade
-      *  pyshorteners >> https://github.com/ellisonleao/pyshorteners
-      *  pip install pyshorteners --user --upgrade
 
 - 2.) Required Python parser:
       *  apt-get install python-lxml
