@@ -19,20 +19,22 @@ except ImportError:
     # without the i18n module
     _ = lambda x: x
 # My plugins
+# This module provides utilities for common tasks involving the with statement.
+from contextlib import closing
+# Regular expression operators
+import re
 try:
     # For Python 3.0 and later
     from urllib.request import urlopen
-    from urllib.parse import urlparse
+    from urllib.parse import urlparse, urlencode
 except ImportError:
     # Fall back to Python 2
     from urlparse import urlparse
     from urllib2 import urlopen
+    from urllib import urlencode
 # Python library for pulling data out of HTML and XML files
 from bs4 import BeautifulSoup
-# A simple URL shortening Python Lib.
-from pyshorteners import Shortener
-# For error routines
-import requests
+from urllib.request import build_opener, Request
 
 class Titlerz(callbacks.Plugin):
     """Titlerz plugin."""
@@ -41,9 +43,6 @@ class Titlerz(callbacks.Plugin):
         self.__parent = super(Titlerz, self)
         self.__parent.__init__(irc)
         self.encoding = 'utf8'  # irc output.
-
-        # URL pyshorteners libraries.
-        self.shortener = Shortener('Tinyurl')
 
         """
         List of domains of known URL shortening services.
@@ -117,7 +116,6 @@ class Titlerz(callbacks.Plugin):
     ###############
 
     def _cleantitle(self, msg):
-        import re
         """Clean up the title of a URL."""
 
         cleaned = msg.translate(dict.fromkeys(range(32))).strip()
@@ -128,11 +126,6 @@ class Titlerz(callbacks.Plugin):
 
         desc = desc.replace('\n', '').replace('\r', '')
         return desc
-
-    def _shorturl(self, url):
-        """Shrink long URLs."""
-        # URL shortening service.
-        return self.shortener.short(url)
     
     def _getdesc(self):
         """Get webpage description - case-insensitive."""
@@ -145,26 +138,42 @@ class Titlerz(callbacks.Plugin):
         else:
             self.log.info("_getdesc: Not returning with content.")
 
-    def _gettitle(self):
-        """Get webpage title."""
-        global title, soup
-        try:
-            title = self._cleantitle(soup.title.string) # Get webpage title
-        except Exception as e:
-            irc.reply(self._bold(self._red("ERROR: ")) + "{0}".format(e.reason), prefixNick=False)
-            self.log.error("ERROR: {0}".format(e.reason))
-            
+    # Create TinyURL link.
+    def _make_tiny(self, url):
+	    request_url = ('http://tinyurl.com/api-create.php?' + 
+	        urlencode({'url':url}))
+	    with closing(urlopen(request_url)) as response:
+	        return response.read().decode('utf-8')
+    
+    def _getsoup(self, url):
+       """Get web page."""
+       opener = build_opener()
+       opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Linux x86_64; rv:28.0) Gecko/20100101 Firefox/28.0')]
+       req = Request(url)
+       # set language for page
+       req.add_header('Accept-Language', 'en')
+       response = opener.open(req)
+       page = response.read()
+       soup = BeautifulSoup(page, 'lxml')
+       return soup
+
     def doPrivmsg(self, irc, msg):
         """Monitor channel for URLs"""
         channel = msg.args[0]
 
-        global title, desc, soup
+        global desc, soup
 
         shorturl = ''
         text     = ''
         title    = ''
         desc     = ''
         soup     = ''
+        t        = ''
+
+        # first, check if we should be 'disabled' in this channel.
+        # config channel #channel plugins.titlerz.enable True or False (or On or Off)
+        if not self.registryValue('enable', channel):
+            return
 
         # don't react to non-ACTION based messages.
         if ircmsgs.isCtcp(msg) and not ircmsgs.isAction(msg):
@@ -178,46 +187,51 @@ class Titlerz(callbacks.Plugin):
         for url in utils.web.urlRe.findall(text):
             try:
                 if urlparse(url).hostname not in self.services:
-                    shorturl = self._shorturl(url).replace('http://', '')                   
-                soup = BeautifulSoup(urlopen(url).read(), 'lxml')  # Open the given URL
-                self._gettitle()                                   # Get webpage title
+                    shorturl = self._make_tiny(url).replace('http://', '')                   
+                # soup = BeautifulSoup(urlopen(url).read(), 'lxml')  # Open the given URL
+                soup = self._getsoup(url)                          # Open the given URL
+                title = self._cleantitle(soup.title.string)        # Get webpage title
                 self._getdesc()                                    # Get webpage description
-                if title:
-                    s = self._bold(self._green("TITLE: ")) + title
-                    irc.reply(s + " [{0}]".format(shorturl) if shorturl else s, prefixNick=False)  # prints: Title of webpage
+                t = self._bold(self._green("TITLE: ")) + title
+                irc.reply(t + " [{0}]".format(shorturl) if shorturl else t, prefixNick=False) # prints: Title of webpage
                 if desc:
-                    irc.reply(self._bold(self._green("DESC : ")) + desc, prefixNick=False)         # prints: Webpage description
+                    irc.reply(self._bold(self._green("DESC : ")) + desc, prefixNick=False)    # prints: Webpage description (if any)
             except Exception as e:
-                irc.reply(self._bold(self._red("ERROR: ")) + "{0}".format(e.reason), prefixNick=False)
-                self.log.error("ERROR: {0}".format(e.reason))
+                irc.reply(self._bold(self._red("ERROR: ")) + "{0}".format(e), prefixNick=False)
+                self.log.error("ERROR: {0}".format(e))
 
     def url(self, irc, msg, args, url):
         """<url>
 
         Public test function for Titlez.
-        Ex: http://www.google.com
+        Ex: url http://www.google.com
         """
-        global title, desc, soup
+        global desc, soup
 
         shorturl = ''
-        channel  = msg.args[0]
-        user     = msg.nick
+        # channel  = msg.args[0]
+        # user     = msg.nick
+        desc     = ''
+        title    = ''
+        t        = ''
 
         # self.log.info("Titlez: Trying to open: {0}".format(url))
 
+        if irc.network == "ChatLounge":
+            irc.reply(irc.network)
         try:
             if urlparse(url).hostname not in self.services:
-                shorturl = self._shorturl(url).replace('http://', '')
-            soup = BeautifulSoup(urlopen(url).read(), 'lxml')  # Open the given URL
-            self._gettitle()                                   # Get webpage title
+                shorturl = self._make_tiny(url).replace('http://', '')
+            # soup = BeautifulSoup(urlopen(url).read(), 'lxml')  # Open the given URL
+            soup = self._getsoup(url)                          # Open the given URL
+            title = self._cleantitle(soup.title.string)        # Get webpage title
             self._getdesc()                                    # Get webpage description
-            if title:
-                s = self._bold("TITLE: ") + title
-                irc.reply(s + " [{0}]".format(shorturl) if shorturl else s)  # prints: Title of webpage
+            t = self._bold("TITLE: ") + title
+            irc.reply(t + " [{0}]".format(shorturl) if shorturl else t) # prints: Title of webpage
             if desc:
-                irc.reply(self._bold("DESC : ") + desc)                      # prints: Webpage description
+                irc.reply(self._bold(self._green("DESC : ")) + desc)    # prints: Webpage description (if any)
         except Exception as err:
-            irc.reply(self._bold(self._red("ERROR: ")) + "{0}".format(err), prefixNick=False)
+            irc.reply(self._bold(self._red("ERROR: ")) + "{0}".format(err))
             self.log.error("ERROR: {0}".format(err))
 
     url = wrap(url, [('text')])
