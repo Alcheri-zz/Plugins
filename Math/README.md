@@ -16,6 +16,6 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
     Conversion output format improvements. Made totally case insensitive.
 
-    This module is a modified version of ".local/lib/pythonx.x/site-packages/supybot/plugins/Math/plugin.py"<br>
+    This module is a modified version of ".local/lib/pythonx.x/site-packages/supybot/plugins/Math"<br>
     If already loaded 'flush' your bots cache nd then 'unload Math'.<br>
     Upload this plugin and then load it.
