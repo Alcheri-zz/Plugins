@@ -226,28 +226,28 @@ man year      = 52 man week
 # temperature
 #
 [temperature]
-K                 = !     # Kelvin
-kelvin            = K
-deg k             = K     # Kelvin
-degree kelvin     = K
+k                 = !     # Kelvin
+kelvin            = k
+deg k             = k     # Kelvin
+degree kelvin     = k
 
-c                 = [K] x + 273.15 ; x - 273.15  # Celsius  # non-linear
-celsius           = [K] x + 273.15 ; x - 273.15  #          # non-linear
-deg c             = [K] x + 273.15 ; x - 273.15  # Celsius  # non-linear
-degree celsius    = [K] x + 273.15 ; x - 273.15  #          # non-linear
+c                 = [k] x + 273.15 ; x - 273.15  # Celsius  # non-linear
+celsius           = [k] x + 273.15 ; x - 273.15  #          # non-linear
+deg c             = [k] x + 273.15 ; x - 273.15  # Celsius  # non-linear
+degree celsius    = [k] x + 273.15 ; x - 273.15  #          # non-linear
 
-R                 = 5/9.0 K     # Rankine
-Rankine           = R
-deg R             = R           # Rankine
-f                 = [R] x + 459.67 ; x - 459.67  # Fahrenheit  # non-linear
-fahrenheit        = [R] x + 459.67 ; x - 459.67  #             # non-linear
-deg f             = [R] x + 459.67 ; x - 459.67  # Fahrenheit  # non-linear
-degree fahrenheit = [R] x + 459.67 ; x - 459.67  #             # non-linear
+r                 = 5/9.0 k     # Rankine
+rankine           = r
+deg R             = r           # Rankine
+f                 = [r] x + 459.67 ; x - 459.67  # Fahrenheit  # non-linear
+fahrenheit        = [r] x + 459.67 ; x - 459.67  #             # non-linear
+deg f             = [r] x + 459.67 ; x - 459.67  # Fahrenheit  # non-linear
+degree fahrenheit = [r] x + 459.67 ; x - 459.67  #             # non-linear
 
 [temp. diff.]
-c deg             = K        # Celsius degree
+c deg             = k        # Celsius degree
 celsius degree    = c deg
-f deg             = R        # Fahrenheit deg.
+f deg             = r        # Fahrenheit deg.
 fahrenheit degree = f deg
 
 

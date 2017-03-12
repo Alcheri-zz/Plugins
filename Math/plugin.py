@@ -350,7 +350,7 @@ class Math(callbacks.Plugin):
                 # expected).
                 newNum = round(newNum, digits + 1 + zeros)
             newNum = self._floatToString(newNum)
-            irc.reply("Converted: {0}".format(str(newNum)) + " " + unit2)
+            irc.reply("Converted: {0}".format(str(newNum)) + " " + unit2, prefixNick=False)
         except convertcore.UnitDataError as ude:
             irc.error(str(ude))
     convert = wrap(convert, [optional('float', 1.0),'something','to','text'])
