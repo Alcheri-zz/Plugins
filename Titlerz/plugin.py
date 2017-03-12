@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# coding: utf-8
+
 ###
 # Copyright (c) 2016, Barry Suridge
 # All rights reserved.
@@ -23,6 +26,8 @@ except ImportError:
 from contextlib import closing
 # Regular expression operators
 import re
+# Plugin error traceback
+import sys, traceback
 try:
     # For Python 3.0 and later
     from urllib.request import urlopen
@@ -190,18 +195,29 @@ class Titlerz(callbacks.Plugin):
         for url in utils.web.urlRe.findall(text):
             try:
                 if urlparse(url).hostname not in self.services:
-                    shorturl = self._make_tiny(url).replace('http://', '')                   
-                # soup = BeautifulSoup(urlopen(url).read(), 'lxml')  # Open the given URL
-                soup = self._getsoup(url)                          # Open the given URL
-                title = self._cleantitle(soup.title.string)        # Get webpage title
-                self._getdesc()                                    # Get webpage description
-                t = self._bold(self._green("TITLE: ")) + title
-                irc.reply(t + " [{0}]".format(shorturl) if shorturl else t, prefixNick=False) # prints: Title of webpage
+                    shorturl = self._make_tiny(url).replace('http://', '')
+                # Open the given URL and parse the HTML
+                soup = self._getsoup(url)
+                # prints: Title of webpage
+                try:
+                    title = self._cleantitle(soup.title.string)  # Cleanup webpage title
+                except (AttributeError, TypeError):
+                   self.log.error("Not found: " + url)
+                if not title:
+                    irc.reply(shorturl if shorturl else '', prefixNick=False)
+                else:
+                    t = self._bold(self._blue("TITLE: ")) + title
+                    irc.reply(t + " [{0}]".format(shorturl) if shorturl else t, prefixNick=False)
+                # Get webpage description
+                self._getdesc()
                 if desc:
-                    irc.reply(self._bold(self._green("DESC : ")) + desc, prefixNick=False)    # prints: Webpage description (if any)
+                    irc.reply(self._bold(self._blue("DESC : ")) + desc, prefixNick=False) # prints: Webpage description (if any)
             except Exception as e:
                 irc.reply(self._bold(self._red("ERROR: ")) + "{0}".format(e), prefixNick=False)
-                self.log.error("ERROR: {0}".format(e))
+                # Non-fatal error traceback information
+                self.log.info(traceback.format_exc())
+                # or
+                # self.log.info(sys.exc_info()[0])
 
     def url(self, irc, msg, args, url):
         """<url>
@@ -223,14 +239,22 @@ class Titlerz(callbacks.Plugin):
         try:
             if urlparse(url).hostname not in self.services:
                 shorturl = self._make_tiny(url).replace('http://', '')
-            # soup = BeautifulSoup(urlopen(url).read(), 'lxml')  # Open the given URL
-            soup = self._getsoup(url)                          # Open the given URL
-            title = self._cleantitle(soup.title.string)        # Get webpage title
-            self._getdesc()                                    # Get webpage description
-            t = self._bold("TITLE: ") + title
-            irc.reply(t + " [{0}]".format(shorturl) if shorturl else t) # prints: Title of webpage
+            # Open the given URL and parse the HTML
+            soup = self._getsoup(url)
+            # prints: Title of webpage
+            try:
+                title = self._cleantitle(soup.title.string)  # Cleanup webpage title
+            except (AttributeError, TypeError):
+               self.log.error("Not found: " + url)
+            if not title:
+                irc.reply(shorturl if shorturl else '')
+            else:
+                t = self._bold("TITLE: ") + title
+                irc.reply(t + " [{0}]".format(shorturl) if shorturl else t)
+            # Get webpage description
+            self._getdesc()
             if desc:
-                irc.reply(self._bold(self._green("DESC : ")) + desc)    # prints: Webpage description (if any)
+                irc.reply(self._bold("DESC : ") + desc) # prints: Webpage description (if any)
         except Exception as err:
             irc.reply(self._bold(self._red("ERROR: ")) + "{0}".format(err))
             self.log.error("ERROR: {0}".format(err))
