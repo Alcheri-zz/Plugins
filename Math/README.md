@@ -2,9 +2,9 @@
 
 * This plugin provides a calculator, converter, a list of units and other useful math functions.
 
-# Copyright (c) 2002-2004, Jeremiah Fincher Copyright (c) 2008, James McCoy All rights reserved.
+<b>Copyright (c) 2002-2004, Jeremiah Fincher Copyright (c) 2008, James McCoy All rights reserved.</b>
 
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:<br>
 
     Redistributions of source code must retain the above copyright notice, this list of conditions, and the following disclaimer.
     Redistributions in binary form must reproduce the above copyright notice, this list of conditions, and the following disclaimer in the documentation and/or other materials provided with the distribution.
@@ -16,5 +16,6 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
     Conversion output formatted.
 
-    This module is a modified version of ".local/lib/pythonx.x/site-packages/supybot/plugins/Math/plugin.py"
-    If already loaded 'unload math' replace the appropriate file(s) and then 'load math'
+    This module is a modified version of ".local/lib/pythonx.x/site-packages/supybot/plugins/Math"<br>
+    If already loaded 'unload math'.<br>
+    Upload this plugin and then load it.
