@@ -145,15 +145,18 @@ class Titlerz(callbacks.Plugin):
 	    with closing(urlopen(request_url)) as response:
 	        return response.read().decode('utf-8')
     
+    # Open the webpage and parse
     def _getsoup(self, url):
        """Get web page."""
        opener = build_opener()
        opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Linux x86_64; rv:28.0) Gecko/20100101 Firefox/28.0')]
        req = Request(url)
-       # set language for page
+       # Set language for page
        req.add_header('Accept-Language', 'en')
        response = opener.open(req)
        page = response.read()
+       # Close open file
+       response.close()
        soup = BeautifulSoup(page, 'lxml')
        return soup
 
@@ -209,8 +212,6 @@ class Titlerz(callbacks.Plugin):
         global desc, soup
 
         shorturl = ''
-        # channel  = msg.args[0]
-        # user     = msg.nick
         desc     = ''
         title    = ''
         t        = ''
