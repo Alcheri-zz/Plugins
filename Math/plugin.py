@@ -336,8 +336,8 @@ class Math(callbacks.Plugin):
         except IndexError:
             digits = 0
         try:
-            newNum = convertcore.convert(number, unit1, unit2)
-            # newNum = convertcore.convert(number, unit1.lower(), unit2.lower())
+            # newNum = convertcore.convert(number, unit1, unit2)
+            newNum = convertcore.convert(number, unit1.lower(), unit2.lower())
             if isinstance(newNum, float):
                 zeros = 0
                 for char in str(newNum).split('.')[1]:

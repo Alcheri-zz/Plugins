@@ -2,7 +2,7 @@
 
 * This plugin provides a calculator, converter, a list of units and other useful math functions.
 
-<b>Copyright (c) 2002-2004, Jeremiah Fincher Copyright (c) 2008, James McCoy All rights reserved.</b>
+# Copyright (c) 2002-2004, Jeremiah Fincher Copyright (c) 2008, James McCoy All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
@@ -12,10 +12,9 @@ Redistribution and use in source and binary forms, with or without modification,
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-* Mod (min): 12/03/2017 (Barry K Suridge)
+* Mod (min): 22/01/2017 (Barry K Suridge)
 
-    Conversion output format improvements. <strike>Made totally case insensitive.</strike>
+    Conversion output formatted.
 
-    This module is a modified version of ".local/lib/pythonx.x/site-packages/supybot/plugins/Math"<br>
-    If already loaded 'flush' your bots cache nd then 'unload Math'.<br>
-    Upload this plugin and then load it.
+    This module is a modified version of ".local/lib/pythonx.x/site-packages/supybot/plugins/Math/plugin.py"
+    If already loaded 'unload math' replace the appropriate file(s) and then 'load math'
