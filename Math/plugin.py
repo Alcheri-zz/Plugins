@@ -364,7 +364,7 @@ class Math(callbacks.Plugin):
         the units of that type.
         """
 
-        irc.reply(convertcore.units(type))
+        irc.reply(convertcore.units(type), prefixNick=False)
     units = wrap(units, [additional('text')])
 
 Class = Math
