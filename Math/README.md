@@ -14,7 +14,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 * Mod (min): 12/03/2017 (Barry K Suridge)
 
-    Conversion output format improvements. Made totally case insensitive.
+    Conversion output format improvements. <strike>Made totally case insensitive.</strike>
 
     This module is a modified version of ".local/lib/pythonx.x/site-packages/supybot/plugins/Math"<br>
     If already loaded 'flush' your bots cache nd then 'unload Math'.<br>
