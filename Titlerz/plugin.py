@@ -198,20 +198,15 @@ class Titlerz(callbacks.Plugin):
                     shorturl = self._make_tiny(url).replace('http://', '')
                 # Open the given URL and parse the HTML
                 soup = self._getsoup(url)
-                # prints: Title of webpage
-                try:
-                    title = self._cleantitle(soup.title.string)  # Cleanup webpage title
-                except (AttributeError, TypeError):
-                   self.log.error("Not found: " + url)
-                if not title:
-                    irc.reply(shorturl if shorturl else '', prefixNick=False)
-                else:
-                    t = self._bold(self._blue("TITLE: ")) + title
-                    irc.reply(t + " [{0}]".format(shorturl) if shorturl else t, prefixNick=False)
+                title = self._cleantitle(soup.title.string)  # Cleanup webpage title
+                t = self._bold(self._blue("TITLE: ")) + title
+                irc.reply(t + " [{0}]".format(shorturl) if shorturl else t, prefixNick=False)  # prints: Title of webpage
                 # Get webpage description
                 self._getdesc()
                 if desc:
                     irc.reply(self._bold(self._blue("DESC : ")) + desc, prefixNick=False) # prints: Webpage description (if any)
+            except (AttributeError, TypeError):
+                self.log.error("Not found: " + url)
             except Exception as e:
                 irc.reply(self._bold(self._red("ERROR: ")) + "{0}".format(e), prefixNick=False)
                 # Non-fatal error traceback information
@@ -241,20 +236,15 @@ class Titlerz(callbacks.Plugin):
                 shorturl = self._make_tiny(url).replace('http://', '')
             # Open the given URL and parse the HTML
             soup = self._getsoup(url)
-            # prints: Title of webpage
-            try:
-                title = self._cleantitle(soup.title.string)  # Cleanup webpage title
-            except (AttributeError, TypeError):
-               self.log.error("Not found: " + url)
-            if not title:
-                irc.reply(shorturl if shorturl else '')
-            else:
-                t = self._bold("TITLE: ") + title
-                irc.reply(t + " [{0}]".format(shorturl) if shorturl else t)
+            title = self._cleantitle(soup.title.string)  # Cleanup webpage title
+            t = self._bold("TITLE: ") + title
+            irc.reply(t + " [{0}]".format(shorturl) if shorturl else t) # prints: Title of webpage
             # Get webpage description
             self._getdesc()
             if desc:
                 irc.reply(self._bold("DESC : ") + desc) # prints: Webpage description (if any)
+        except (AttributeError, TypeError):
+            self.log.error("Not found: " + url)
         except Exception as err:
             irc.reply(self._bold(self._red("ERROR: ")) + "{0}".format(err))
             self.log.error("ERROR: {0}".format(err))
