@@ -197,12 +197,12 @@ class Titlerz(callbacks.Plugin):
                 # Open the given URL and parse the HTML
                 soup = self._getsoup(url)
                 title = self._cleantitle(soup.title.string)  # Cleanup webpage title
-                t = self._bold(self._blue("TITLE: ")) + title
+                t = self._bold(self._green("TITLE: ")) + title
                 irc.reply(t + " [{0}]".format(shorturl) if shorturl else t, prefixNick=False)  # prints: Title of webpage
                 # Get webpage description
                 self._getdesc()
                 if desc:
-                    irc.reply(self._bold(self._blue("DESC : ")) + desc, prefixNick=False) # prints: Webpage description (if any)
+                    irc.reply(self._bold(self._green("DESC : ")) + desc, prefixNick=False) # prints: Webpage description (if any)
             except (AttributeError, TypeError):
                 self.log.error("Not found: " + url)
             except Exception as e:
