@@ -7,6 +7,11 @@
 #
 ###
 
+# Backward compatibility with Python 2 
+from __future__ import (absolute_import, division,
+                        print_function, unicode_literals)
+from builtins import *
+
 import supybot.conf as conf
 import supybot.utils as utils
 from supybot.commands import *
@@ -28,15 +33,9 @@ from contextlib import closing
 import re
 # Plugin error traceback
 import sys, traceback
-try:
-    # For Python 3.0 and later
-    from urllib.request import urlopen
-    from urllib.parse import urlparse, urlencode
-except ImportError:
-    # Fall back to Python 2
-    from urlparse import urlparse
-    from urllib2 import urlopen
-    from urllib import urlencode
+# For Python 3.0 and later
+from urllib.request import urlopen
+from urllib.parse import urlparse, urlencode
 # Python library for pulling data out of HTML and XML files
 from bs4 import BeautifulSoup
 from urllib.request import build_opener, Request
@@ -182,7 +181,6 @@ class Titlerz(callbacks.Plugin):
         # config channel #channel plugins.titlerz.enable True or False (or On or Off)
         if not self.registryValue('enable', channel):
             return
-
         # don't react to non-ACTION based messages.
         if ircmsgs.isCtcp(msg) and not ircmsgs.isAction(msg):
             return
