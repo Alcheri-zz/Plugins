@@ -22,5 +22,7 @@ Setting up
       *  apt-get install python-lxml
       *  easy_install lxml
       *  pip install lxml
+      
+<p>If you're already using ShrinkURL and Web, disable their overlapping features.</p> <p>/msg <bot> plugins.ShrinkUrl.shrinkSnarfer False<br> /msg <bot> plugins.Web.titleSnarfer False</p> <p>Otherwise, you will have duplicates being pasted. You do not need to unload either and it's <b>not</b> recommended as each has functionality elsewhere in the bot.</p> 
 
 Inspiration: https://github.com/reticulatingspline/Supybot-Titler
