@@ -28,6 +28,8 @@ If you're already using ShrinkURL and Web, disable their overlapping features.
 /msg <bot> plugins.ShrinkUrl.shrinkSnarfer False
 /msg <bot> plugins.Web.titleSnarfer False
 
-Otherwise, you will have duplicates being pasted. You do not need to unload either and it's NOT recommended as each has functionality elsewhere in the bot. 
+Otherwise, you will have duplicates being pasted. You do not need to unload either and it's NOT recommended as each has functionality elsewhere in the bot.
+
+* This plugin is Python 2 backwards compatible.
 
 https://github.com/reticulatingspline/Supybot-Titler
