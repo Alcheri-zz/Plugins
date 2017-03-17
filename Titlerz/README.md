@@ -23,6 +23,7 @@ Setting up
       * pip3 install Pillow
 
 - 2.) Required Python parser:
+
       *  apt-get install python-lxml
       *  easy_install lxml
       *  pip3 install lxml
