@@ -16,14 +16,16 @@ Setting up
 - 1.) Required Python libraries:
 
     - BeautifulSoup (make a change if you install them locally)
-      *  pip install beautifulsoup4 --upgrade
+      *  pip3 install beautifulsoup4 --upgrade
     - future
-      * pip install future
+      * pip3 install future
+    - Pillow
+      * pip3 install Pillow
 
 - 2.) Required Python parser:
       *  apt-get install python-lxml
       *  easy_install lxml
-      *  pip install lxml
+      *  pip3 install lxml
       
 <p>If you're already using ShrinkURL and Web, disable their overlapping features.</p> <p>/msg <bot> plugins.ShrinkUrl.shrinkSnarfer False<br> /msg <bot> plugins.Web.titleSnarfer False</p> <p>Otherwise, you will have duplicates being pasted. You do not need to unload either and it's <b>not</b> recommended as each has functionality elsewhere in the bot.</p> 
 <p>* This plugin is Python 2 backwards compatible.<p>

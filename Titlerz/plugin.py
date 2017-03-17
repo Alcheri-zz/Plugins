@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # coding: utf-8
 
 ###
@@ -7,7 +7,7 @@
 #
 ###
 
-# Backward compatibility with Python 2 
+# Backwards compatibility with Python 2 
 from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
 from builtins import *
@@ -34,14 +34,16 @@ import re
 # Plugin error traceback
 import sys, traceback
 # For Python 3.0 and later
-from urllib.request import urlopen
+from urllib.request import build_opener, Request, urlopen
 from urllib.parse import urlparse, urlencode
 # Python library for pulling data out of HTML and XML files
 from bs4 import BeautifulSoup
-from urllib.request import build_opener, Request
+import requests
 
 class Titlerz(callbacks.Plugin):
     """Titlerz plugin."""
+    threaded = True
+    noIgnore = False
 
     def __init__(self, irc):
         self.__parent = super(Titlerz, self)
@@ -83,21 +85,69 @@ class Titlerz(callbacks.Plugin):
     # FORMATTING #
     ##############
 
+    def _white(self, string):
+        """Returns a white string."""
+        return ircutils.mircColor(string, 'white')
+
+    def _black(self, string):
+        """Returns a black string."""
+        return ircutils.mircColor(string, 'black')
+
+    def _blue(self, string):
+        """Returns a blue string."""
+        return ircutils.mircColor(string, 'blue')
+
+    def _green(self, string):
+        """Returns a green string."""
+        return ircutils.mircColor(string, 'green')
+    
     def _red(self, string):
         """Returns a red string."""
         return ircutils.mircColor(string, 'red')
+
+    def _brown(self, string):
+        """Returns a brown string."""
+        return ircutils.mircColor(string, 'brown')
+
+    def _purple(self, string):
+        """Returns a purple string."""
+        return ircutils.mircColor(string, 'purple')
+
+    def _orange(self, string):
+        """Returns a orange string."""
+        return ircutils.mircColor(string, 'orange')
 
     def _yellow(self, string):
         """Returns a yellow string."""
         return ircutils.mircColor(string, 'yellow')
 
-    def _green(self, string):
-        """Returns a green string."""
-        return ircutils.mircColor(string, 'green')
+    def _light_green(self, string):
+        """Returns a light green string."""
+        return ircutils.mircColor(string, 'light green')
+    
+    def _teal(self, string):
+        """Returns a teal string."""
+        return ircutils.mircColor(string, 'teal')
 
-    def _blue(self, string):
-        """Returns a blue string."""
-        return ircutils.mircColor(string, 'blue')
+    def _light_blue(self, string):
+        """Returns a light blue string."""
+        return ircutils.mircColor(string, 'light blue')
+
+    def _dark_blue(self, string):
+        """Returns a dark blue string."""
+        return ircutils.mircColor(string, 'dark blue')
+
+    def _pink(self, string):
+        """Returns a pink string."""
+        return ircutils.mircColor(string, 'pink')
+
+    def _dark_grey(self, string):
+        """Returns a dark grey string."""
+        return ircutils.mircColor(string, 'dark grey')
+
+    def _light_grey(self, string):
+        """Returns a light gray string."""
+        return ircutils.mircColor(string, 'light gray')
 
     def _bold(self, string):
         """Returns a non-bold string."""
@@ -115,6 +165,57 @@ class Titlerz(callbacks.Plugin):
         """Returns a bold/underline string."""
         return ircutils.bold(ircutils.underline(string))
 
+    #########################
+    # HTTP HELPER FUNCTIONS #
+    #########################
+
+    def open_url(self, url, urlread=True):
+        """Generic http fetcher we can use here.
+           Links are handled here and passed on.
+        """
+
+        # big try except block and error handling for each.
+        self.log.info("open_url: Trying to open: {0}".format(url))
+
+        desc = None
+        o    = None
+        shorturl = None
+        longurl  = None
+
+        req = Request(url)
+        res = urlopen(req)
+        response = res.info()
+        res.close()
+        if response['content-type'].startswith('image/'):
+            o = self._getimg(url, response['content-length'])
+        elif response['content-type'].startswith('text/'):
+            try:
+                soup = self._getsoup(url)
+                title = self._cleantitle(soup.title.string)
+                # Get webpage description
+                des = soup.find('meta', attrs={'name': lambda x: x and x.lower()=='description'})
+                if des and des.get('content'):
+                    desc = self._cleandesc(des['content'].strip())
+                if title:
+                    if urlparse(url).hostname not in self.services:
+                        shorturl = self._make_tiny(url).replace('http://', '')
+                    else:
+                        longurl = self._longurl(url).replace('http://', '')
+                    o = "{0} - {1}".format(shorturl, title) if shorturl is not None else "{0} - {1}".format(longurl, title)
+                else:
+                    o = None
+                if desc:
+                    return {'title': o, 'desc': desc}
+            except Exception as err:
+                self.log.info("open_url: Error: {0}".format(err))
+                # Non-fatal error traceback information
+                self.log.info(traceback.format_exc())
+                # or
+                # self.log.info(sys.exc_info()[0])
+        elif response['content-type'].startswith('audio/'):
+            pass
+        return o
+
     ###############
     #  UTILITIES  #
     ###############
@@ -130,17 +231,46 @@ class Titlerz(callbacks.Plugin):
 
         desc = desc.replace('\n', '').replace('\r', '')
         return desc
-    
-    def _getdesc(self):
-        """Get webpage description - case-insensitive."""
-        global desc, soup
-        des = ''
-        # Get webpage description
-        des = soup.find('meta', attrs={'name': lambda x: x and x.lower()=='description'})
-        if des and des.get('content'):
-            desc = self._cleandesc(des['content'].strip())
-        else:
-            self.log.info("_getdesc: Not returning with content.")
+
+    def _bytesto(self, bytes, to, bsize=1024):
+        """Convert bytes to megabytes, etc.
+           sample code:
+               print('mb= ' + str(_bytesto(314575262000000, 'm')))
+           sample output: 
+               mb= 300002347.946
+        """
+        import math
+        a = {'k' : 1, 'm': 2, 'g' : 3, 't' : 4, 'p' : 5, 'e' : 6 }
+        r = float(bytes)
+        for i in range(a[to]):
+            r = r / bsize
+
+        return math.ceil(float(r))
+
+    def _getimg(self, url, size):
+        """Displays image information in channel"""
+        from io import BytesIO
+        # try/except with python images.
+        try:
+            from PIL import Image
+        except ImportError: 
+            self.log.error("_getimg: ERROR. I did not find Pillow installed. I cannot process images w/o this.")
+            return None
+        response = requests.get(url)
+        response.close()
+        try:  # try/except because images can be corrupt.
+            img = Image.open(BytesIO(response.content))
+        except Exception as err:
+            self.log.error("_getimg: ERROR: {0} is an invalid image I cannot read :: {1}".format(url, err))
+        if img.format == 'GIF':  # check to see if animated.
+            try:
+                img.seek(1)
+                img.seek(0)
+                img.format = "Animated GIF"
+            except EOFError:
+                pass
+        return "Image type: {0}  Dimensions: {1}x{2}  Mode: {3}  Size: {4}Kb".format(img.format, \
+                img.size[0], img.size[1], img.mode, str(self._bytesto(size, 'k')))
 
     # Create TinyURL link.
     def _make_tiny(self, url):
@@ -148,12 +278,19 @@ class Titlerz(callbacks.Plugin):
 	        urlencode({'url':url}))
 	    with closing(urlopen(request_url)) as response:
 	        return response.read().decode('utf-8')
-    
-    # Open the webpage and parse
+
+    # Expand shortened link
+    def _longurl(self, url):
+        """Expand shortened URLs."""
+        session = requests.Session()  # so connections are recycled
+        resp = session.head(url, allow_redirects=True)
+        return resp.url
+
+    # Open the webpage for parsing
     def _getsoup(self, url):
        """Get web page."""
        opener = build_opener()
-       opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Linux x86_64; rv:28.0) Gecko/20100101 Firefox/28.0')]
+       opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Linux i586; rv:31.0) Gecko/20100101 Firefox/31.0')]
        req = Request(url)
        # Set language for page
        req.add_header('Accept-Language', 'en')
@@ -164,18 +301,13 @@ class Titlerz(callbacks.Plugin):
        soup = BeautifulSoup(page, 'lxml')
        return soup
 
+    ############################################
+    # MAIN TRIGGER FOR URLS PASTED IN CHANNELS #
+    ############################################
+    
     def doPrivmsg(self, irc, msg):
         """Monitor channel for URLs"""
-        channel = msg.args[0]
-
-        global desc, soup
-
-        shorturl = ''
-        text     = ''
-        title    = ''
-        desc     = ''
-        soup     = ''
-        t        = ''
+        channel = msg.args[0]  # channel, if any.
 
         # first, check if we should be 'disabled' in this channel.
         # config channel #channel plugins.titlerz.enable True or False (or On or Off)
@@ -190,64 +322,44 @@ class Titlerz(callbacks.Plugin):
             else:
                 text = msg.args[1]
 
-        for url in utils.web.urlRe.findall(text):
-            try:
-                if urlparse(url).hostname not in self.services:
-                    shorturl = self._make_tiny(url).replace('http://', '')
-                # Open the given URL and parse the HTML
-                soup = self._getsoup(url)
-                title = self._cleantitle(soup.title.string)  # Cleanup webpage title
-                t = self._bold(self._green("TITLE: ")) + title
-                irc.reply(t + " [{0}]".format(shorturl) if shorturl else t, prefixNick=False)  # prints: Title of webpage
-                # Get webpage description
-                self._getdesc()
-                if desc:
-                    irc.reply(self._bold(self._green("DESC : ")) + desc, prefixNick=False) # prints: Webpage description (if any)
-            except (AttributeError, TypeError):
-                self.log.error("Not found: " + url)
-            except Exception as e:
-                irc.reply(self._bold(self._red("ERROR: ")) + "{0}".format(e), prefixNick=False)
-                # Non-fatal error traceback information
-                self.log.info(traceback.format_exc())
-                # or
-                # self.log.info(sys.exc_info()[0])
+            for url in utils.web.urlRe.findall(text):
+            # for url in matches:
+                # url = self._tidyurl(url)  # should we tidy them?
+                output = self.open_url(url)
+                # now, with gd, we must check what output is.
+                if output:  # if we did not get None back.
+                    if isinstance(output, dict):  # we have a dict.
+                        # output.
+                        if 'desc' in output and 'title' in output and output['desc'] is not None and output['title'] is not None:
+                            irc.sendMsg(ircmsgs.privmsg(channel, self._bold(self._teal("TITLE: ")) + output['title']))
+                            irc.sendMsg(ircmsgs.privmsg(channel, self._bold(self._teal("DESC : ")) + output['desc']))
+                        elif 'title' in output and output['title'] is not None:
+                            irc.sendMsg(ircmsgs.privmsg(channel, self._bold(self._teal("TITLE: ")) + output['title']))
+                    else:  # no desc.
+                        irc.sendMsg(ircmsgs.privmsg(channel, self._bold("Response: ") + output))
 
-    def url(self, irc, msg, args, url):
+    def titler(self, irc, msg, args, opturl):
         """<url>
 
-        Public test function for Titlez.
-        Ex: url http://www.google.com
+        Public test function for Titler.
+        Ex: http://www.google.com
         """
-        global desc, soup
 
-        shorturl = ''
-        desc     = ''
-        title    = ''
-        t        = ''
+        channel = msg.args[0]
 
-        # self.log.info("Titlez: Trying to open: {0}".format(url))
+        # main.
+        output = self.open_url(opturl)
+        # now, with gd, we must check what output is.
+        if output:  # if we did not get None back.
+            if isinstance(output, dict):  # we have a dict.
+                if 'title' in output:  # we got a title back.
+                    irc.reply(self._bold("TITLE: ") + output['title'])
+                    if 'desc' in output:
+                        irc.reply(self._bold("GD: ") +output['desc'])
+            else:
+                irc.reply("{0}".format(output))
 
-        if irc.network == "ChatLounge":
-            irc.reply(irc.network)
-        try:
-            if urlparse(url).hostname not in self.services:
-                shorturl = self._make_tiny(url).replace('http://', '')
-            # Open the given URL and parse the HTML
-            soup = self._getsoup(url)
-            title = self._cleantitle(soup.title.string)  # Cleanup webpage title
-            t = self._bold("TITLE: ") + title
-            irc.reply(t + " [{0}]".format(shorturl) if shorturl else t) # prints: Title of webpage
-            # Get webpage description
-            self._getdesc()
-            if desc:
-                irc.reply(self._bold("DESC : ") + desc) # prints: Webpage description (if any)
-        except (AttributeError, TypeError):
-            self.log.error("Not found: " + url)
-        except Exception as err:
-            irc.reply(self._bold(self._red("ERROR: ")) + "{0}".format(err))
-            self.log.error("ERROR: {0}".format(err))
-
-    url = wrap(url, [('text')])
+    titler = wrap(titler, [('text')])
 
 Class = Titlerz
 

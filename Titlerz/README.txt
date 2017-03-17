@@ -13,15 +13,19 @@ Configuring
 Setting up
 ==========
 
-- 1.) Required Python 2 libraries:
+- 1.) Required Python libraries:
 
     - BeautifulSoup (make a change if you install them locally.)    
-        pip install beautifulsoup4 --user --upgrade
+        pip3 install beautifulsoup4 --upgrade
+    - future
+        pip3 install future
+    - Pillow
+        pip3 install Pillow
 
 - 2.) Required Python parser:
         apt-get install python-lxml
         easy_install lxml
-        pip install lxml
+        pip3 install lxml
 
 If you're already using ShrinkURL and Web, disable their overlapping features.
 
