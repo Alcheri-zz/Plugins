@@ -34,7 +34,7 @@ import re
 # Plugin error traceback
 import sys, traceback
 # For Python 3.0 and later
-from urllib.request import build_opener, Request, urlopen
+from urllib.request import build_opener, HTTPError, Request, urlopen
 from urllib.parse import urlparse, urlencode
 # Python library for pulling data out of HTML and XML files
 from bs4 import BeautifulSoup
@@ -53,7 +53,7 @@ class Titlerz(callbacks.Plugin):
         """
         List of domains of known URL shortening services.
         """
-        self.services = [
+        self.shortUrlServices = [
             "adf.ly",
             "bit.do",
             "bit.ly",
@@ -173,7 +173,7 @@ class Titlerz(callbacks.Plugin):
         """Generic http fetcher we can use here.
            Links are handled here and passed on.
         """
-
+        import os
         # big try except block and error handling for each.
         self.log.info("open_url: Trying to open: {0}".format(url))
 
@@ -182,10 +182,23 @@ class Titlerz(callbacks.Plugin):
         shorturl = None
         longurl  = None
 
+        # badexts = ['.flv', '.m3u8']
+
+        if url.endswith((".flv", ".m3u8")):
+            path = urlparse(url).path
+            ext = os.path.splitext(path)[1]
+            return "open_url: ERROR. Bad extention " + ext
+
         req = Request(url)
-        res = urlopen(req)
+        try:
+            res = urlopen(req, timeout=4)
+        except HTTPError as err:
+            self.log.error("open_url: Error: {0}".format(err.code))
+            return "open_url: Error: {0}".format(err.code)
         response = res.info()
         res.close()
+        if response['content-type'].startswith('audio/') or response['content-type'].startswith('video/'):
+            pass
         if response['content-type'].startswith('image/'):
             o = self._getimg(url, response['content-length'])
         elif response['content-type'].startswith('text/'):
@@ -197,7 +210,7 @@ class Titlerz(callbacks.Plugin):
                 if des and des.get('content'):
                     desc = self._cleandesc(des['content'].strip())
                 if title:
-                    if urlparse(url).hostname not in self.services:
+                    if urlparse(url).hostname not in self.shortUrlServices:
                         shorturl = self._make_tiny(url).replace('http://', '')
                     else:
                         longurl = self._longurl(url).replace('http://', '')
@@ -207,13 +220,13 @@ class Titlerz(callbacks.Plugin):
                 if desc:
                     return {'title': o, 'desc': desc}
             except Exception as err:
-                self.log.info("open_url: Error: {0}".format(err))
+                return "open_url: Error: {0}".format(err)
                 # Non-fatal error traceback information
                 self.log.info(traceback.format_exc())
                 # or
                 # self.log.info(sys.exc_info()[0])
-        elif response['content-type'].startswith('audio/'):
-            pass
+        else:
+            o = self._filetype(url)
         return o
 
     ###############
@@ -247,21 +260,43 @@ class Titlerz(callbacks.Plugin):
 
         return math.ceil(float(r))
 
+    # Check for unknown filetypes using libmagic
+    def _filetype(url):
+        """Check for unknown filetypes using libmagic."""
+        try:
+            import magic # python-magic
+        except ImportError:
+            return "_filetype: ERROR. I did not find python-magic installed. I cannot continue w/o this."
+
+        response = requests.get(url, timeout=4)
+        response.close()
+        try:
+            size = len(response.content)
+            typeoffile = magic.from_buffer(response.content)
+            return "Content type: {0} - Size: {1}".format(typeoffile, str(self._bytesto(size, 'k')))
+        except Exception as e:  # give a detailed error here in the logs.
+            self.log.error("ERROR: _filetype: error trying to parse {0} via other (else) :: {1}".format(url, e))
+            self.log.error("ERROR: _filetype: no handler for {0} at {1}".format(response.headers['content-type'], url))
+            return None
+
     def _getimg(self, url, size):
         """Displays image information in channel"""
         from io import BytesIO
+        
+        self.log.info("_getimg: Trying to open: {0}".format(url))
+
         # try/except with python images.
         try:
             from PIL import Image
         except ImportError: 
-            self.log.error("_getimg: ERROR. I did not find Pillow installed. I cannot process images w/o this.")
-            return None
-        response = requests.get(url)
+            return "_getimg: ERROR. I did not find Pillow installed. I cannot process images w/o this."
+        response = requests.get(url, timeout=4)
         response.close()
         try:  # try/except because images can be corrupt.
             img = Image.open(BytesIO(response.content))
         except Exception as err:
-            self.log.error("_getimg: ERROR: {0} is an invalid image I cannot read :: {1}".format(url, err))
+            return "_getimg: ERROR: {0} is an invalid image I cannot read :: {1}".format(url, err)
+        width, height = img.size
         if img.format == 'GIF':  # check to see if animated.
             try:
                 img.seek(1)
@@ -270,7 +305,7 @@ class Titlerz(callbacks.Plugin):
             except EOFError:
                 pass
         return "Image type: {0}  Dimensions: {1}x{2}  Mode: {3}  Size: {4}Kb".format(img.format, \
-                img.size[0], img.size[1], img.mode, str(self._bytesto(size, 'k')))
+                width, height, img.mode, str(self._bytesto(size, 'k')))
 
     # Create TinyURL link.
     def _make_tiny(self, url):
@@ -355,7 +390,7 @@ class Titlerz(callbacks.Plugin):
                 if 'title' in output:  # we got a title back.
                     irc.reply(self._bold("TITLE: ") + output['title'])
                     if 'desc' in output:
-                        irc.reply(self._bold("GD: ") +output['desc'])
+                        irc.reply(self._bold("GD: ") + output['desc'])
             else:
                 irc.reply("{0}".format(output))
 
