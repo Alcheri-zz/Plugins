@@ -21,6 +21,8 @@ Setting up
         pip3 install future
     - Pillow
         pip3 install Pillow
+    - Magic
+        pip3 install python-magic
 
 - 2.) Required Python parser:
         apt-get install python-lxml
