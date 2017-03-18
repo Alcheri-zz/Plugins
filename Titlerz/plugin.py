@@ -169,7 +169,7 @@ class Titlerz(callbacks.Plugin):
     # HTTP HELPER FUNCTIONS #
     #########################
 
-    def open_url(self, url, urlread=True):
+    def open_url(self, url, gd=True, urlread=True):
         """Generic http fetcher we can use here.
            Links are handled here and passed on.
         """
@@ -182,13 +182,12 @@ class Titlerz(callbacks.Plugin):
         shorturl = None
         longurl  = None
 
-        # badexts = ['.flv', '.m3u8']
-
-        if url.endswith((".flv", ".m3u8")):
+        # Check for bad media extensions.
+        if url.endswith(('.flv', '.m3u8')):
             path = urlparse(url).path
             ext = os.path.splitext(path)[1]
             return "open_url: ERROR. Bad extention " + ext
-
+        # Requests: HTTP for Humans
         req = Request(url)
         try:
             res = urlopen(req, timeout=4)
@@ -205,16 +204,23 @@ class Titlerz(callbacks.Plugin):
             try:
                 soup = self._getsoup(url)
                 title = self._cleantitle(soup.title.string)
-                # Get webpage description
-                des = soup.find('meta', attrs={'name': lambda x: x and x.lower()=='description'})
-                if des and des.get('content'):
-                    desc = self._cleandesc(des['content'].strip())
+                # bad domains.
+                baddomains = ['twitter.com', 'panoramio.com', 'kickass.to', 'tinypic.com', 'ebay.com', 'imgur.com', 'dropbox.com']
+                urlhostname = urlparse(url).hostname
+                if __builtins__['any'](b in urlhostname for b in baddomains):
+                    gd = False
+                # check if we should "get description" (GD)
+                if gd:
+                   # Yes! Get webpage description
+                   des = soup.find('meta', attrs={'name': lambda x: x and x.lower()=='description'})
+                   if des and des.get('content'):
+                       desc = self._cleandesc(des['content'].strip())
                 if title:
                     if urlparse(url).hostname not in self.shortUrlServices:
                         shorturl = self._make_tiny(url).replace('http://', '')
                     else:
                         longurl = self._longurl(url).replace('http://', '')
-                    o = "{0} - {1}".format(shorturl, title) if shorturl is not None else "{0} - {1}".format(longurl, title)
+                    o = "{0} - {1}".format(longurl if not shorturl else shorturl, title)
                 else:
                     o = None
                 if desc:
@@ -226,7 +232,7 @@ class Titlerz(callbacks.Plugin):
                 # or
                 # self.log.info(sys.exc_info()[0])
         else:
-            o = self._filetype(url)
+            return self._filetype(url)
         return o
 
     ###############
@@ -329,7 +335,7 @@ class Titlerz(callbacks.Plugin):
        req = Request(url)
        # Set language for page
        req.add_header('Accept-Language', 'en')
-       response = opener.open(req)
+       response = opener.open(req, timeout=4)
        page = response.read()
        # Close open file
        response.close()
