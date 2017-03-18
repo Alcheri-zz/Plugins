@@ -16,11 +16,13 @@ Setting up
 - 1.) Required Python libraries:
 
     - BeautifulSoup (make a change if you install them locally)
-      *  pip3 install beautifulsoup4 --upgrade
+      * pip3 install beautifulsoup4 --upgrade
     - future
       * pip3 install future
     - Pillow
       * pip3 install Pillow
+    - Magic
+      * pip3 install python-magic
 
 - 2.) Required Python parser:
 
