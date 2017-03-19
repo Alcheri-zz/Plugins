@@ -34,7 +34,7 @@ import re
 # Plugin error traceback
 import sys, traceback
 # For Python 3.0 and later
-from urllib.request import build_opener, HTTPError, Request, urlopen
+from urllib.request import HTTPError, Request, urlopen
 from urllib.parse import urlparse, urlencode
 # Python library for pulling data out of HTML and XML files
 from bs4 import BeautifulSoup
@@ -54,29 +54,42 @@ class Titlerz(callbacks.Plugin):
         List of domains of known URL shortening services.
         """
         self.shortUrlServices = [
-            "adf.ly",
-            "bit.do",
-            "bit.ly",
-            "bitly.com",
-            "budurl.com",
-            "cli.gs",
-            "fa.by",
-            "goo.gl",
-            "is.gd",
-            "j.mp",
-            "lurl.no",
-            "lnkd.in",
-            "moourl.com",
-            "ow.ly",
-            "smallr.com",
-            "snipr.com",
-            "snipurl.com",
-            "snurl.com",
-            "su.pr",
-            "t.co",
-            "tiny.cc",
-            "tr.im",
-            "tinyurl.com"]
+            'adf.ly',
+            'bit.do',
+            'bit.ly',
+            'bitly.com',
+            'budurl.com',
+            'cli.gs',
+            'fa.by',
+            'goo.gl',
+            'is.gd',
+            'j.mp',
+            'lurl.no',
+            'lnkd.in',
+            'moourl.com',
+            'ow.ly',
+            'smallr.com',
+            'snipr.com',
+            'snipurl.com',
+            'snurl.com',
+            'su.pr',
+            't.co',
+            'tiny.cc',
+            'tr.im',
+            'tinyurl.com']
+
+        """
+        List of domains to not allow displaying
+        of web page descriptions.
+        """
+        self.baddomains = [
+            'twitter.com',
+            'panoramio.com',
+            'kickass.to',
+            'tinypic.com',
+            'ebay.com',
+            'imgur.com',
+            'dropbox.com']
 
     def die(self):
         self.__parent.die()
@@ -169,7 +182,7 @@ class Titlerz(callbacks.Plugin):
     # HTTP HELPER FUNCTIONS #
     #########################
 
-    def open_url(self, url, gd=True, urlread=True):
+    def open_url(self, url, gd=True):
         """Generic http fetcher we can use here.
            Links are handled here and passed on.
         """
@@ -205,9 +218,9 @@ class Titlerz(callbacks.Plugin):
                 soup = self._getsoup(url)
                 title = self._cleantitle(soup.title.string)
                 # bad domains.
-                baddomains = ['twitter.com', 'panoramio.com', 'kickass.to', 'tinypic.com', 'ebay.com', 'imgur.com', 'dropbox.com']
+                # baddomains = ['twitter.com', 'panoramio.com', 'kickass.to', 'tinypic.com', 'ebay.com', 'imgur.com', 'dropbox.com']
                 urlhostname = urlparse(url).hostname
-                if __builtins__['any'](b in urlhostname for b in baddomains):
+                if __builtins__['any'](b in urlhostname for b in self.baddomains):
                     gd = False
                 # check if we should "get description" (GD)
                 if gd:
@@ -232,7 +245,8 @@ class Titlerz(callbacks.Plugin):
                 # or
                 # self.log.info(sys.exc_info()[0])
         else:
-            return self._filetype(url)
+            # handle any other filetype using libmagic.
+            o = self._filetype(url)
         return o
 
     ###############
@@ -266,7 +280,7 @@ class Titlerz(callbacks.Plugin):
 
         return math.ceil(float(r))
 
-    # Check for unknown filetypes using libmagic
+    # Check for other filetypes using libmagic
     def _filetype(url):
         """Check for unknown filetypes using libmagic."""
         try:
@@ -330,12 +344,10 @@ class Titlerz(callbacks.Plugin):
     # Open the webpage for parsing
     def _getsoup(self, url):
        """Get web page."""
-       opener = build_opener()
-       opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Linux i586; rv:31.0) Gecko/20100101 Firefox/31.0')]
        req = Request(url)
        # Set language for page
-       req.add_header('Accept-Language', 'en')
-       response = opener.open(req, timeout=4)
+       req.add_header('Accept-Language', 'en-us,en;q=0.5')
+       response = urlopen(req, timeout=4)
        page = response.read()
        # Close open file
        response.close()
