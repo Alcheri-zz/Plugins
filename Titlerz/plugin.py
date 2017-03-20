@@ -187,7 +187,7 @@ class Titlerz(callbacks.Plugin):
            Links are handled here and passed on.
         """
         import os
-        # big try except block and error handling for each.
+
         self.log.info("open_url: Trying to open: {0}".format(url))
 
         desc = None
@@ -196,12 +196,15 @@ class Titlerz(callbacks.Plugin):
         longurl  = None
 
         # Check for bad media extensions.
-        if url.endswith(('.flv', '.m3u8')):
+        badexts = ['.flv', '.m3u8']
+        if __builtins__['any'](url.endswith(x) for x in badexts):
             path = urlparse(url).path
             ext = os.path.splitext(path)[1]
-            return "open_url: ERROR. Bad extention " + ext
+            return "open_url: ERROR. Bad extention \'{0}\'".format(ext)
+
         # Requests: HTTP for Humans
         req = Request(url)
+        # try except block with error handling for each.
         try:
             res = urlopen(req, timeout=4)
         except HTTPError as err:
@@ -218,21 +221,20 @@ class Titlerz(callbacks.Plugin):
                 soup = self._getsoup(url)
                 title = self._cleantitle(soup.title.string)
                 # bad domains.
-                # baddomains = ['twitter.com', 'panoramio.com', 'kickass.to', 'tinypic.com', 'ebay.com', 'imgur.com', 'dropbox.com']
                 urlhostname = urlparse(url).hostname
                 if __builtins__['any'](b in urlhostname for b in self.baddomains):
                     gd = False
-                # check if we should "get description" (GD)
+                # Should we "get description" (GD)?
                 if gd:
                    # Yes! Get webpage description
                    des = soup.find('meta', attrs={'name': lambda x: x and x.lower()=='description'})
                    if des and des.get('content'):
                        desc = self._cleandesc(des['content'].strip())
                 if title:
-                    if urlparse(url).hostname not in self.shortUrlServices:
-                        shorturl = self._make_tiny(url).replace('http://', '')
-                    else:
+                    if __builtins__['any'](s in urlhostname for s in self.shortUrlServices):
                         longurl = self._longurl(url).replace('http://', '')
+                    else:
+                        shorturl = self._make_tiny(url).replace('http://', '')
                     o = "{0} - {1}".format(longurl if not shorturl else shorturl, title)
                 else:
                     o = None
@@ -252,6 +254,14 @@ class Titlerz(callbacks.Plugin):
     ###############
     #  UTILITIES  #
     ###############
+
+    def any(self, iterable):
+        """Return True if any element of the iterable is true.
+        If the iterable is empty, return False. """
+        for element in iterable:
+            if element:
+                return True
+        return False
 
     def _cleantitle(self, msg):
         """Clean up the title of a URL."""
