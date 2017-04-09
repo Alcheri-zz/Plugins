@@ -17,7 +17,12 @@ except ImportError:
     # Placeholder that allows to run the plugin on a bot
     # without the i18n module
     _ = lambda x: x
-
+import random, os
+# Text formatting library
+try:
+    from .local import color
+except ImportError:
+    from color import *
 
 class OnJoin(callbacks.Plugin):
     """Send a notice to all users entering a channel."""
@@ -34,38 +39,30 @@ class OnJoin(callbacks.Plugin):
 
     def doJoin(self, irc, msg):
         channel = msg.args[0]
-        # It's us.
-        if ircutils.strEqual(irc.nick, msg.nick):
+        # Check if we should be 'disabled' in this channel.
+        # config channel #channel plugins.onjoin.enable True or False (or On or Off)
+        if ircutils.isChannel(channel) and self.registryValue('enable', channel):
+            try:
+                p = os.path.expanduser('~')
+                fp = p + '/runbot/plugins/OnJoin/quotes.txt'
+                line_num = 0
+                selected_line = ''
+                with open(fp) as f:
+                    while 1:
+                        line = f.readline()
+                        if not line: break
+                        line_num += 1
+                        if random.uniform(0, line_num) < 1:
+                            selected_line = line
+                # It's the bot.
+                if ircutils.strEqual(irc.nick, msg.nick) is False:
+                    irc.reply(color.bold(selected_line.strip()) , notice=True, private=True, to=msg.nick)
+                else:
+                    return None
+            except Exception as err:
+                irc.error("{0}".format(err))
+        else:
             return None
-        # check if 'disabled' in this channel.
-        if ircutils.isChannel(channel):
-            if self.registryValue('enabled', msg.args[0]) and \
-                len(msg.args) > 1:
-                m = 'We are the Borg. Resistance is futile.'
-                irc.reply(m, notice=True, private=True, to=msg.nick)
-            else:
-                return None
-
-    def enable(self, irc, msg, args, channel):
-        """
-        [<channel>]
-        Enables this plugin in <channel> messages the bot sees.
-        <channel> is only necessary if the message
-        isn't sent in the channel itself.
-        """
-        self.setRegistryValue('enabled', True, channel)
-        irc.replySuccess()
-    enable = wrap(enable, ['channel'])
-
-    def disable(self, irc, msg, args, channel):
-        """
-        [<channel>]
-        Disables this plugin in <channel>.  <channel> is only necessary if the
-        message isn't sent in the channel itself.
-        """
-        self.setRegistryValue('enabled', False, channel)
-        irc.replySuccess()
-    disable = wrap(disable, ['channel'])
 
 Class = OnJoin
 
