@@ -1,12 +1,12 @@
 # An alternative to Supybot's DNS function.
 Returns the ip of <hostname | URL | nick | ip or IPv6> or the reverse DNS hostname of \<ip\> using Python's socket library.
 
-Configuring
+Configuring:
 ===========
 
 ** None required.
 
-Setting up
+Setting up:
 ==========
 
 * Required Python libraries:
@@ -14,3 +14,10 @@ Setting up
       - pip install validator.py<br>
       
 <code>A library for validating that dictionary values meet certain sets of parameters. Much like form validators, but for dicts.</code>
+
+Using:
+=====
+
+[prefix/nick] dns <hostname | URL | nick | ip or IPv6>
+
+**Note:** [prefix] may be set via 'config reply.whenAddressedBy.chars'
