@@ -139,10 +139,11 @@ def stripUnderline(s):
 
 def stripFormatting(s):
     """Returns the string s, with all formatting removed."""
-    # stripColor has to go first because of some strings.
     s = stripColor(s)
     s = stripBold(s)
     s = stripReverse(s)
     s = stripUnderline(s)
     s = stripItalic(s)
     return s.replace('\x0f', '').replace('\x0F', '')
+
+# vim:set shiftwidth=4 softtabstop=4 expandtab textwidth=79:

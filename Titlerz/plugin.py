@@ -41,11 +41,11 @@ from io import BytesIO # Images
 try:
     from PIL import Image # Pillow
 except ImportError:
-    raise TitlerError('ERROR: I did not find Pillow installed. I cannot process images w/o this.')
+    raise TitlerError('ERROR: I did not find Pillow installed. ' + irc.nick + ' cannot process images.')
 try:
     import magic # python-magic
 except ImportError:
-    raise TitlerError('ERROR: I did not find python-magic installed. I cannot continue w/o this.')
+    raise TitlerError('ERROR: I did not find python-magic installed. ' + irc.nick + ' cannot continue.')
 import math # Mathematical functions.
 # Text formatting library
 try:
@@ -116,11 +116,11 @@ class Titlerz(callbacks.Plugin):
             res = urlopen(req, timeout=4)
         except URLError as err:
             if hasattr(err, 'reason'):
-                self.log.error("open_url: We failed to reach a server: {0}".format(err.reason))
-                return "open_url: We failed to reach a server. Reason: {0}".format(err.reason)
+                self.log.error('open_url: We failed to reach a server: {0}'.format(err.reason))
+                return 'open_url: We failed to reach a server. Reason: {0}'.format(err.reason)
             elif hasattr(err, 'code'):
-                self.log.error("open_url: The server couldn\'t fulfill the request. Reason: {0}".format(err.code))
-                return "open_url: The server couldn\'t fulfill the request: {0}".format(err.code)
+                self.log.error('open_url: The server couldn\'t fulfill the request. Reason: {0}'.format(err.code))
+                return 'open_url: The server couldn\'t fulfill the request: {0}'.format(err.code)
         response = res.info()
         res.close()
         if response['content-type'].startswith('audio/') or response['content-type'].startswith('video/'):
@@ -131,7 +131,7 @@ class Titlerz(callbacks.Plugin):
             try:
                 o = self._gettitle(url)
             except Exception as err:
-                return "open_url: Error: {0}".format(err)
+                return 'open_url: Error: {0}'.format(err)
                 # Non-fatal error traceback information
                 self.log.info(traceback.format_exc())
                 # or
@@ -148,7 +148,7 @@ class Titlerz(callbacks.Plugin):
         shorturl = None
         longurl  = None
 
-        self.log.info("_gettitle: Trying to open: {0}".format(url))
+        self.log.info('_gettitle: Trying to open: {0}'.format(url))
 
         soup = self._getsoup(url)
         if soup.title is not None:
@@ -228,33 +228,33 @@ class Titlerz(callbacks.Plugin):
         try:
             size = len(response.content)
             typeoffile = magic.from_buffer(response.content)
-            return "Content type: {0} - Size: {1}".format(typeoffile, str(self._bytesto(size, 'k')))
+            return 'Content type: {0} - Size: {1}'.format(typeoffile, str(self._bytesto(size, 'k')))
         except Exception as err:  # give a detailed error here in the logs.
-            self.log.error("ERROR: _filetype: error trying to parse {0} via other (else) :: {1}".format(url, err))
-            self.log.error("ERROR: _filetype: no handler for {0} at {1}".format(response.headers['content-type'], url))
+            self.log.error('ERROR: _filetype: error trying to parse {0} via other (else) :: {1}'.format(url, err))
+            self.log.error('ERROR: _filetype: no handler for {0} at {1}'.format(response.headers['content-type'], url))
             return None
 
     # Process image data from supplied URL.
     def _getimg(self, url, size):
         """Displays image information in channel"""
         
-        self.log.info("_getimg: Trying to open: {0}".format(url))
+        self.log.info('_getimg: Trying to open: {0}'.format(url))
 
         response = requests.get(url, timeout=4)
         response.close()
         try:  # try/except because images can be corrupt.
             img = Image.open(BytesIO(response.content))
         except Exception as err:
-            return "_getimg: ERROR: {0} is an invalid image I cannot read :: {1}".format(url, err)
+            return '_getimg: ERROR: {0} is an invalid image I cannot read :: {1}'.format(url, err)
         width, height = img.size
         if img.format == 'GIF':  # check to see if animated.
             try:
                 img.seek(1)
                 img.seek(0)
-                img.format = "Animated GIF"
+                img.format = 'Animated GIF'
             except EOFError:
                 pass
-        return "Image type: {0}  Dimensions: {1}x{2}  Mode: {3}  Size: {4}Kb".format(img.format, \
+        return 'Image type: {0}  Dimensions: {1}x{2}  Mode: {3}  Size: {4}Kb'.format(img.format, \
                 width, height, img.mode, str(self._bytesto(size, 'k')))
 
     # Create TinyURL link.
@@ -304,7 +304,6 @@ class Titlerz(callbacks.Plugin):
                 text = ircmsgs.unAction(msg)
             else:
                 text = msg.args[1]
-
             for url in utils.web.urlRe.findall(text):
             # for url in matches:
                 # url = self._tidyurl(url)  # should we tidy them?
@@ -317,9 +316,9 @@ class Titlerz(callbacks.Plugin):
                             irc.sendMsg(ircmsgs.privmsg(channel, color.bold(color.teal('TITLE: ')) + output['title']))
                             irc.sendMsg(ircmsgs.privmsg(channel, color.bold(color.teal('DESC : ')) + output['desc']))
                         elif 'title' in output and output['title'] is not None:
-                            irc.sendMsg(ircmsgs.privmsg(channel, color.bold(color.teal("TITLE: ")) + output['title']))
+                            irc.sendMsg(ircmsgs.privmsg(channel, color.bold(color.teal('TITLE: ')) + output['title']))
                     else:  # no desc.
-                        irc.sendMsg(ircmsgs.privmsg(channel, color.bold(color.italic(("Response: "))) + output))
+                        irc.sendMsg(ircmsgs.privmsg(channel, color.bold(color.italic(('Response: '))) + output))
 
     def titler(self, irc, msg, args, opturl):
         """<url>
@@ -329,18 +328,17 @@ class Titlerz(callbacks.Plugin):
         """
 
         channel = msg.args[0]
-
         # main.
         output = self.open_url(opturl)
         # now, with gd, we must check what output is.
         if output:  # if we did not get None back.
             if isinstance(output, dict):  # we have a dict.
                 if 'title' in output:  # we got a title back.
-                    irc.reply(color.bold("TITLE: ") + output['title'])
+                    irc.reply(color.bold('TITLE: ') + output['title'])
                     if 'desc' in output:
-                        irc.reply(color.bold("GD: ") + output['desc'])
+                        irc.reply(color.bold('GD: ') + output['desc'])
             else:
-                irc.reply("{0}".format(output))
+                irc.reply('{0}'.format(output))
 
     titler = wrap(titler, [('text')])
 
