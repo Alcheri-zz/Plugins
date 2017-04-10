@@ -2,7 +2,7 @@
 # Copyright (c) 2016, Barry Suridge
 # All rights reserved.
 #
-#
+# Python 3
 ###
 
 import supybot.utils as utils
@@ -18,6 +18,8 @@ except ImportError:
     # without the i18n module
     _ = lambda x: x
 import random, os
+import traceback # Error traceback
+from pathlib import Path
 # Text formatting library
 try:
     from .local import color
@@ -39,12 +41,12 @@ class OnJoin(callbacks.Plugin):
 
     def doJoin(self, irc, msg):
         channel = msg.args[0]
-        # Check if we should be 'disabled' in this channel.
+        # Check if in a channel and see if we should be 'disabled' in it.
         # config channel #channel plugins.onjoin.enable True or False (or On or Off)
         if ircutils.isChannel(channel) and self.registryValue('enable', channel):
             try:
-                p = os.path.expanduser('~')
-                fp = p + '/runbot/plugins/OnJoin/quotes.txt'
+                p = Path('plugins/OnJoin/quotes.txt').resolve()
+                fp = str(p)
                 line_num = 0
                 selected_line = ''
                 with open(fp) as f:
@@ -54,13 +56,14 @@ class OnJoin(callbacks.Plugin):
                         line_num += 1
                         if random.uniform(0, line_num) < 1:
                             selected_line = line
-                # It's the bot.
+                # It's not the bot.
                 if ircutils.strEqual(irc.nick, msg.nick) is False:
                     irc.reply(color.bold(selected_line.strip()) , notice=True, private=True, to=msg.nick)
                 else:
                     return None
             except Exception as err:
-                irc.error("{0}".format(err))
+                # Non-fatal error traceback information
+                self.log.info(traceback.format_exc())
         else:
             return None
 
