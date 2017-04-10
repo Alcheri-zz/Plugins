@@ -69,7 +69,7 @@ class MyDNS(callbacks.Plugin):
         dns = color.bold(color.teal('DNS: '))
         geoip = color.bold(color.teal('LOC: '))
 
-        if self.is_nick(i):
+        if self._isnick(i):
             nick = i
             if not nick.lower() in irc.state.channels[channel].users:
                 irc.error('No such nick.', prefixNick=False)
@@ -84,9 +84,9 @@ class MyDNS(callbacks.Plugin):
             try:
                 (name, _, ip_address_list) = socket.gethostbyaddr(host)
                 if (valid.ip_address.ipv4(host) or valid.ip_address.ipv6(host)):
-                   irc.reply(dns + ip_address_list[0] + " resolves to " + name, prefixNick=False)
+                   irc.reply(dns + ip_address_list[0] + ' resolves to ' + name, prefixNick=False)
                 else:
-                    irc.reply(dns + name + " resolves to " + ip_address_list[0], prefixNick=False)
+                    irc.reply(dns + name + ' resolves to ' + ip_address_list[0], prefixNick=False)
                 irc.reply(geoip + self._geoip(ip_address_list[0]), prefixNick=False)
             except socket.gaierror as err:
                 # Non-fatal error traceback information
@@ -97,18 +97,18 @@ class MyDNS(callbacks.Plugin):
         if valid.domain(i): # Check if input is a domain.
             try:
                 (name, _, ip_address_list) = socket.gethostbyname_ex(i)
-                irc.reply(dns + name + " resolves to {0}".format(ip_address_list[0]), prefixNick=False)
+                irc.reply(dns + name + ' resolves to {0}'.format(ip_address_list[0]), prefixNick=False)
                 irc.reply(geoip + self._geoip(ip_address_list[0]), prefixNick=False)
             except socket.gaierror as err:
                 (name, _, ip_address_list) = socket.gethostbyaddr(i)
-                irc.reply(dns + name + " resolves to " + ip_address_list[0], prefixNick=False)
+                irc.reply(dns + name + ' resolves to ' + ip_address_list[0], prefixNick=False)
                 irc.reply(geoip + self._geoip(ip_address_list[0]), prefixNick=False)
         elif valid.url(i): # Check if input is a valid URL.
             o = urlparse(i)
             s = i.replace(o.scheme + "://", "")
             try:
                 (name, _, ip_address_list) = socket.gethostbyname_ex(s)
-                irc.reply(dns + s + " resolves to {0}".format(ip_address_list[0]), prefixNick=False)
+                irc.reply(dns + s + ' resolves to {0}'.format(ip_address_list[0]), prefixNick=False)
                 irc.reply(geoip + self._geoip(ip_address_list[0]), prefixNick=False)
             except socket.gaierror as err:
                 # Non-fatal error traceback information
@@ -118,7 +118,7 @@ class MyDNS(callbacks.Plugin):
             try:
                 (name, _, ip_address_list) = socket.gethostbyaddr(i)
                 # x = re.sub('.', lambda m: {"[":"", "]":"", "'":""}.get(m.group(), m.group()),ip_address_list[0])
-                irc.reply(dns + ip_address_list[0] + " resolves to " + name, prefixNick=False)
+                irc.reply(dns + ip_address_list[0] + ' resolves to ' + name, prefixNick=False)
                 irc.reply(geoip + self._geoip(ip_address_list[0]), prefixNick=False)
             except socket.error as err:
                 # Non-fatal error traceback information
@@ -128,7 +128,7 @@ class MyDNS(callbacks.Plugin):
 
     dns = wrap(dns, ['something'])
 
-    def is_nick(self, nick):
+    def _isnick(self, nick):
         """ Checks to see if a nickname `nick` is valid.
         According to :rfc:`2812 #section-2.3.1`, section 2.3.1, a nickname must start
         with either a letter or one of the allowed special characters, and after
