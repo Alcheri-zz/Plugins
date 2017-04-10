@@ -13,6 +13,7 @@ import supybot.callbacks as callbacks
 import validators as valid
 from urllib.parse import urlparse
 import re, requests, socket
+import sys, traceback # Error traceback
 
 try:
     from supybot.i18n import PluginInternationalization, internationalizeDocstring
@@ -65,8 +66,8 @@ class MyDNS(callbacks.Plugin):
         name =''
         ip_address_list = ''
         userHostmask = ''
-        dns = color.bold(color.teal('DNS  : '))
-        geoip = color.bold(color.teal('GeoIP: '))
+        dns = color.bold(color.teal('DNS: '))
+        geoip = color.bold(color.teal('LOC: '))
 
         if self.is_nick(i):
             nick = i
@@ -88,7 +89,8 @@ class MyDNS(callbacks.Plugin):
                     irc.reply(dns + name + " resolves to " + ip_address_list[0], prefixNick=False)
                 irc.reply(geoip + self._geoip(ip_address_list[0]), prefixNick=False)
             except socket.gaierror as err:
-                irc.error("{0}".format(err))
+                # Non-fatal error traceback information
+                self.log.info(traceback.format_exc())
             except:
                 pass
 
@@ -109,7 +111,8 @@ class MyDNS(callbacks.Plugin):
                 irc.reply(dns + s + " resolves to {0}".format(ip_address_list[0]), prefixNick=False)
                 irc.reply(geoip + self._geoip(ip_address_list[0]), prefixNick=False)
             except socket.gaierror as err:
-                irc.error("{0}".format(err))
+                # Non-fatal error traceback information
+                self.log.info(traceback.format_exc())
                  # Check if input is a valid IPv4 or IPv6 address.
         elif (valid.ip_address.ipv4(i) or valid.ip_address.ipv6(i)):
             try:
@@ -118,7 +121,8 @@ class MyDNS(callbacks.Plugin):
                 irc.reply(dns + ip_address_list[0] + " resolves to " + name, prefixNick=False)
                 irc.reply(geoip + self._geoip(ip_address_list[0]), prefixNick=False)
             except socket.error as err:
-                irc.error("{0}".format(err))
+                # Non-fatal error traceback information
+                self.log.info(traceback.format_exc())
         else:
             return
 
@@ -147,9 +151,9 @@ class MyDNS(callbacks.Plugin):
         try:
             response = urlopen(url, timeout = 1).read().decode('utf8')
         except URLError as err:
-            irc.error("{0}".format(err))
+            # Non-fatal error traceback information
+            self.log.info(traceback.format_exc())
         except socket.timeout as err:
-            irc.error("{0}".format(err))
             raise MyException("There was an error: %r" % err)
         data = json.loads(response)
 
