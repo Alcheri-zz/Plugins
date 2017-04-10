@@ -21,6 +21,11 @@ except ImportError:
     # Placeholder that allows to run the plugin on a bot
     # without the i18n module
     _ = lambda x: x
+# Text formatting library
+try:
+    from .local import color
+except ImportError:
+    from color import *
 
 class MyDNS(callbacks.Plugin):
     """An alternative to Supybot's DNS function."""
@@ -60,11 +65,13 @@ class MyDNS(callbacks.Plugin):
         name =''
         ip_address_list = ''
         userHostmask = ''
+        dns = color.bold(color.teal('DNS  : '))
+        geoip = color.bold(color.teal('GeoIP: '))
 
         if self.is_nick(i):
             nick = i
             if not nick.lower() in irc.state.channels[channel].users:
-                irc.error('No such nick.', notice=True, private=True, to=msg.nick)
+                irc.error('No such nick.', prefixNick=False)
                 return
             try:
                 userHostmask = irc.state.nickToHostmask(nick)
@@ -76,10 +83,10 @@ class MyDNS(callbacks.Plugin):
             try:
                 (name, _, ip_address_list) = socket.gethostbyaddr(host)
                 if (valid.ip_address.ipv4(host) or valid.ip_address.ipv6(host)):
-                    irc.reply(ip_address_list[0] + " resolves to " + name)
+                   irc.reply(dns + ip_address_list[0] + " resolves to " + name, prefixNick=False)
                 else:
-                    irc.reply(name + " resolves to " + ip_address_list[0])
-                irc.reply(self._geoip(ip_address_list[0]))
+                    irc.reply(dns + name + " resolves to " + ip_address_list[0], prefixNick=False)
+                irc.reply(geoip + self._geoip(ip_address_list[0]), prefixNick=False)
             except socket.gaierror as err:
                 irc.error("{0}".format(err))
             except:
@@ -88,19 +95,19 @@ class MyDNS(callbacks.Plugin):
         if valid.domain(i): # Check if input is a domain.
             try:
                 (name, _, ip_address_list) = socket.gethostbyname_ex(i)
-                irc.reply(name + " resolves to {0}".format(ip_address_list[0]))
-                irc.reply(self._geoip(ip_address_list[0]))
+                irc.reply(dns + name + " resolves to {0}".format(ip_address_list[0]), prefixNick=False)
+                irc.reply(geoip + self._geoip(ip_address_list[0]), prefixNick=False)
             except socket.gaierror as err:
                 (name, _, ip_address_list) = socket.gethostbyaddr(i)
-                irc.reply(name + " resolves to " + ip_address_list[0])
-                irc.reply(self._geoip(ip_address_list[0]))
+                irc.reply(dns + name + " resolves to " + ip_address_list[0], prefixNick=False)
+                irc.reply(geoip + self._geoip(ip_address_list[0]), prefixNick=False)
         elif valid.url(i): # Check if input is a valid URL.
             o = urlparse(i)
             s = i.replace(o.scheme + "://", "")
             try:
                 (name, _, ip_address_list) = socket.gethostbyname_ex(s)
-                irc.reply(s + " resolves to {0}".format(ip_address_list[0]))
-                irc.reply(self._geoip(ip_address_list[0]))
+                irc.reply(dns + s + " resolves to {0}".format(ip_address_list[0]), prefixNick=False)
+                irc.reply(geoip + self._geoip(ip_address_list[0]), prefixNick=False)
             except socket.gaierror as err:
                 irc.error("{0}".format(err))
                  # Check if input is a valid IPv4 or IPv6 address.
@@ -108,8 +115,8 @@ class MyDNS(callbacks.Plugin):
             try:
                 (name, _, ip_address_list) = socket.gethostbyaddr(i)
                 # x = re.sub('.', lambda m: {"[":"", "]":"", "'":""}.get(m.group(), m.group()),ip_address_list[0])
-                irc.reply(ip_address_list[0] + " resolves to " + name)
-                irc.reply(self._geoip(ip_address_list[0]))
+                irc.reply(dns + ip_address_list[0] + " resolves to " + name, prefixNick=False)
+                irc.reply(geoip + self._geoip(ip_address_list[0]), prefixNick=False)
             except socket.error as err:
                 irc.error("{0}".format(err))
         else:
