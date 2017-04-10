@@ -6,7 +6,7 @@ This plugin uses TinyURL as an enhancement to output.
 Configuring
 ===========
 
-* Enable/Disable for specific channels: config supybot.plugins.Titlerz.enable True or False (or On or Off
+* Enable/Disable for specific channels: config supybot.plugins.Titlerz.enable True or False (or On or Off)
 * In channel: [command prefix or BotNick]config channel #channel plugins.titlerz.enable True or False (or On or Off)
               [command prefix] May be set via 'config reply.whenAddressedBy.chars'
 * Options   : enable or disable
