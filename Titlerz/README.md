@@ -1,3 +1,4 @@
+![Supported Python versions](https://img.shields.io/badge/python-3.4%2C%203.5%2C%203.6-blue.svg)
 # A simple Web Title Snarfer.
 
 This plugin uses TinyURL as an enhancement to output.
