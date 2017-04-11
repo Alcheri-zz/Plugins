@@ -50,8 +50,6 @@ class MyDNS(callbacks.Plugin):
     def die(self):
         self.__parent.die()
 
-    threaded = True
-    @internationalizeDocstring
     def dns(self, irc, msg, args, i):
         """<hostname | Nick | URL | ip or IPv6>
         An alternative to Supybot's DNS function.
@@ -69,7 +67,7 @@ class MyDNS(callbacks.Plugin):
         dns = color.bold(color.teal('DNS: '))
         geoip = color.bold(color.teal('LOC: '))
 
-        if self._isnick(i):
+        if self._isnick(i):  # Valid bnick?
             nick = i
             if not nick.lower() in irc.state.channels[channel].users:
                 irc.error('No such nick.', prefixNick=False)
@@ -77,18 +75,19 @@ class MyDNS(callbacks.Plugin):
             try:
                 userHostmask = irc.state.nickToHostmask(nick)
             except KeyError:
-                irc.error('Invalid nick or hostmask')
+                irc.error('Invalid nick or hostmask', prefixNick=False)
                 return
 
             (nick, user, host) = ircutils.splitHostmask(userHostmask)
             try:
                 (name, _, ip_address_list) = socket.gethostbyaddr(host)
-                if (valid.ip_address.ipv4(host) or valid.ip_address.ipv6(host)):
+                if (valid.ip_address.ipv4(host) or valid.ip_address.ipv6(host)): # Check if input is a valid IPv4 or IPv6 address.
                    irc.reply(dns + ip_address_list[0] + ' resolves to ' + name, prefixNick=False)
                 else:
                     irc.reply(dns + name + ' resolves to ' + ip_address_list[0], prefixNick=False)
                 irc.reply(geoip + self._geoip(ip_address_list[0]), prefixNick=False)
             except socket.gaierror as err:
+                irc.reply('An error has occurred and has been logged. Please contact this bot\'s administrator for more information.')
                 # Non-fatal error traceback information
                 self.log.info(traceback.format_exc())
             except:
@@ -111,16 +110,16 @@ class MyDNS(callbacks.Plugin):
                 irc.reply(dns + s + ' resolves to {0}'.format(ip_address_list[0]), prefixNick=False)
                 irc.reply(geoip + self._geoip(ip_address_list[0]), prefixNick=False)
             except socket.gaierror as err:
+                irc.reply('An error has occurred and has been logged. Please contact this bot\'s administrator for more information.')
                 # Non-fatal error traceback information
                 self.log.info(traceback.format_exc())
-                 # Check if input is a valid IPv4 or IPv6 address.
-        elif (valid.ip_address.ipv4(i) or valid.ip_address.ipv6(i)):
+        elif (valid.ip_address.ipv4(i) or valid.ip_address.ipv6(i)): # Check if input is a valid IPv4 or IPv6 address.
             try:
                 (name, _, ip_address_list) = socket.gethostbyaddr(i)
-                # x = re.sub('.', lambda m: {"[":"", "]":"", "'":""}.get(m.group(), m.group()),ip_address_list[0])
                 irc.reply(dns + ip_address_list[0] + ' resolves to ' + name, prefixNick=False)
                 irc.reply(geoip + self._geoip(ip_address_list[0]), prefixNick=False)
             except socket.error as err:
+                irc.reply('An error has occurred and has been logged. Please contact this bot\'s administrator for more information.')
                 # Non-fatal error traceback information
                 self.log.info(traceback.format_exc())
         else:
@@ -144,6 +143,7 @@ class MyDNS(callbacks.Plugin):
         return True
 
     def _geoip(self, ip):
+        """Search the geolocation of IP addresses."""
         from urllib.request import urlopen
         import json
 
@@ -154,7 +154,7 @@ class MyDNS(callbacks.Plugin):
             # Non-fatal error traceback information
             self.log.info(traceback.format_exc())
         except socket.timeout as err:
-            raise MyException("There was an error: %r" % err)
+            raise MyException('There was an error: %r' % err)
         data = json.loads(response)
 
         location_city = data['city']

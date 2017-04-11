@@ -53,7 +53,6 @@ try:
 except ImportError:
     from color import *
 
-
 class Titlerz(callbacks.Plugin):
     """Titlerz plugin."""
 
@@ -171,7 +170,9 @@ class Titlerz(callbacks.Plugin):
             if __builtins__['any'](s in urlhostname for s in self.shortUrlServices):
                 longurl = self._longurl(url).replace('http://', '')
             else:
-                shorturl = self._make_tiny(url).replace('http://', '')
+                request_url = ('http://tinyurl.com/api-create.php?' + urlencode({'url':url}))
+                with closing(urlopen(request_url)) as response:
+                    shorturl = response.read().decode('utf-8')
             o = "{0} - {1}".format(longurl if not shorturl else shorturl, title)
         else:
             o = None
@@ -256,13 +257,6 @@ class Titlerz(callbacks.Plugin):
                 pass
         return 'Image type: {0}  Dimensions: {1}x{2}  Mode: {3}  Size: {4}Kb'.format(img.format, \
                 width, height, img.mode, str(self._bytesto(size, 'k')))
-
-    # Create TinyURL link.
-    def _make_tiny(self, url):
-	    request_url = ('http://tinyurl.com/api-create.php?' + 
-	        urlencode({'url':url}))
-	    with closing(urlopen(request_url)) as response:
-	        return response.read().decode('utf-8')
 
     # Expand shortened link
     def _longurl(self, url):
