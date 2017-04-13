@@ -87,9 +87,7 @@ class MyDNS(callbacks.Plugin):
                     irc.reply(dns + name + ' resolves to ' + ip_address_list[0], prefixNick=False)
                 irc.reply(geoip + self._geoip(ip_address_list[0]), prefixNick=False)
             except socket.gaierror as err:
-                irc.reply('An error has occurred and has been logged. Please contact this bot\'s administrator for more information.')
-                # Non-fatal error traceback information
-                self.log.info(traceback.format_exc())
+                irc.error("{0}".format(err), prefixNick=False)
             except:
                 pass
 
@@ -99,9 +97,14 @@ class MyDNS(callbacks.Plugin):
                 irc.reply(dns + name + ' resolves to {0}'.format(ip_address_list[0]), prefixNick=False)
                 irc.reply(geoip + self._geoip(ip_address_list[0]), prefixNick=False)
             except socket.gaierror as err:
-                (name, _, ip_address_list) = socket.gethostbyaddr(i)
+                try:
+                    (name, _, ip_address_list) = socket.gethostbyaddr(i)
+                except:
+                    irc.reply("Dns unable to resolve address " + i, prefixNick=False)
+                    # irc.error("{0}".format(err), prefixNick=False)
+                    return
                 irc.reply(dns + name + ' resolves to ' + ip_address_list[0], prefixNick=False)
-                irc.reply(geoip + self._geoip(ip_address_list[0]), prefixNick=False)
+                irc.reply(geoip + self._geoip(ip_address_list[0]), prefixNick=False)                   
         elif valid.url(i): # Check if input is a valid URL.
             o = urlparse(i)
             s = i.replace(o.scheme + "://", "")
@@ -110,9 +113,7 @@ class MyDNS(callbacks.Plugin):
                 irc.reply(dns + s + ' resolves to {0}'.format(ip_address_list[0]), prefixNick=False)
                 irc.reply(geoip + self._geoip(ip_address_list[0]), prefixNick=False)
             except socket.gaierror as err:
-                irc.reply('An error has occurred and has been logged. Please contact this bot\'s administrator for more information.')
-                # Non-fatal error traceback information
-                self.log.info(traceback.format_exc())
+                irc.error("{0}".format(err), prefixNick=False)
         elif (valid.ip_address.ipv4(i) or valid.ip_address.ipv6(i)): # Check if input is a valid IPv4 or IPv6 address.
             try:
                 (name, _, ip_address_list) = socket.gethostbyaddr(i)

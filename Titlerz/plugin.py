@@ -102,7 +102,6 @@ class Titlerz(callbacks.Plugin):
 
         # Check for MIME type extensions.
         badexts = ['.bmp', '.flv', '.m3u8']
-        # badexts = ['.bmp', '.flv', '.m3u8','.txt']
         if __builtins__['any'](url.endswith(x) for x in badexts):
             path = urlparse(url).path
             ext = os.path.splitext(path)[1]
@@ -110,7 +109,7 @@ class Titlerz(callbacks.Plugin):
 
         # Requests: HTTP for Humans
         req = Request(url)
-        # try except block with error handling for each.
+        # try/except block with error handling for each.
         try:
             res = urlopen(req, timeout=4)
         except URLError as err:
@@ -300,7 +299,6 @@ class Titlerz(callbacks.Plugin):
                 text = msg.args[1]
             for url in utils.web.urlRe.findall(text):
             # for url in matches:
-                # url = self._tidyurl(url)  # should we tidy them?
                 output = self.open_url(url)
                 # now, with gd, we must check what output is.
                 if output:  # if we did not get None back.
