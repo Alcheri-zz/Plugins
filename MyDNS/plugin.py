@@ -14,6 +14,7 @@ import validators as valid
 from urllib.parse import urlparse
 import re, requests, socket
 import sys, traceback # Error traceback
+import errno # Standard errno system symbols
 
 try:
     from supybot.i18n import PluginInternationalization, internationalizeDocstring
@@ -100,8 +101,7 @@ class MyDNS(callbacks.Plugin):
                 try:
                     (name, _, ip_address_list) = socket.gethostbyaddr(i)
                 except:
-                    irc.reply("Dns unable to resolve address " + i, prefixNick=False)
-                    # irc.error("{0}".format(err), prefixNick=False)
+                    irc.reply('Dns unable to resolve address ' + i, prefixNick=False)
                     return
                 irc.reply(dns + name + ' resolves to ' + ip_address_list[0], prefixNick=False)
                 irc.reply(geoip + self._geoip(ip_address_list[0]), prefixNick=False)                   
@@ -115,14 +115,17 @@ class MyDNS(callbacks.Plugin):
             except socket.gaierror as err:
                 irc.error("{0}".format(err), prefixNick=False)
         elif (valid.ip_address.ipv4(i) or valid.ip_address.ipv6(i)): # Check if input is a valid IPv4 or IPv6 address.
-            try:
+            try:                
                 (name, _, ip_address_list) = socket.gethostbyaddr(i)
                 irc.reply(dns + ip_address_list[0] + ' resolves to ' + name, prefixNick=False)
                 irc.reply(geoip + self._geoip(ip_address_list[0]), prefixNick=False)
-            except socket.error as err:
-                irc.reply('An error has occurred and has been logged. Please contact this bot\'s administrator for more information.')
-                # Non-fatal error traceback information
-                self.log.info(traceback.format_exc())
+            except Exception as err:
+                if err.errno == 2:
+                    irc.reply('Dns Host name lookup failure ' + i, prefixNick=False)
+                else:
+                    irc.reply('An error has occurred and has been logged. Please contact this bot\'s administrator for more information.')
+                    # Non-fatal error traceback information
+                    self.log.info(traceback.format_exc())
         else:
             return
 
