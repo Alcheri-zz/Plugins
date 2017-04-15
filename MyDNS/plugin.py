@@ -68,7 +68,7 @@ class MyDNS(callbacks.Plugin):
         dns = color.bold(color.teal('DNS: '))
         geoip = color.bold(color.teal('LOC: '))
 
-        if self._isnick(i):  # Valid bnick?
+        if self._isnick(i):  # Valid nick?
             nick = i
             if not nick.lower() in irc.state.channels[channel].users:
                 irc.error('No such nick.', prefixNick=False)
@@ -92,35 +92,27 @@ class MyDNS(callbacks.Plugin):
             except:
                 pass
 
-        if valid.domain(i): # Check if input is a domain.
+        if valid.domain(i) or valid.url(i): # Check if input is valid.
+            if "://" in i:
+                o = urlparse(i)
+                i = o.netloc
             try:
-                (name, _, ip_address_list) = socket.gethostbyname_ex(i)
-                irc.reply(dns + name + ' resolves to {0}'.format(ip_address_list[0]), prefixNick=False)
-                irc.reply(geoip + self._geoip(ip_address_list[0]), prefixNick=False)
+                (hostname, aliaslist, ipaddrlist) = socket.gethostbyname_ex(i)
             except socket.gaierror as err:
-                try:
-                    (name, _, ip_address_list) = socket.gethostbyaddr(i)
-                except:
-                    irc.reply('Dns unable to resolve address ' + i, prefixNick=False)
-                    return
-                irc.reply(dns + name + ' resolves to ' + ip_address_list[0], prefixNick=False)
-                irc.reply(geoip + self._geoip(ip_address_list[0]), prefixNick=False)                   
-        elif valid.url(i): # Check if input is a valid URL.
-            o = urlparse(i)
-            s = i.replace(o.scheme + "://", "")
-            try:
-                (name, _, ip_address_list) = socket.gethostbyname_ex(s)
-                irc.reply(dns + s + ' resolves to {0}'.format(ip_address_list[0]), prefixNick=False)
-                irc.reply(geoip + self._geoip(ip_address_list[0]), prefixNick=False)
-            except socket.gaierror as err:
-                irc.error("{0}".format(err), prefixNick=False)
+                if err.errno == -2:
+                     irc.reply('Dns unable to resolve address ' + i, prefixNick=False)
+                     return
+            irc.reply(dns + i + ' resolves to {0} [\'{1}\'] {2}'.format(ipaddrlist[0], hostname, aliaslist), prefixNick=False)
+            irc.reply(geoip + self._geoip(ipaddrlist[0]), prefixNick=False)
         elif (valid.ip_address.ipv4(i) or valid.ip_address.ipv6(i)): # Check if input is a valid IPv4 or IPv6 address.
             try:                
-                (name, _, ip_address_list) = socket.gethostbyaddr(i)
-                irc.reply(dns + ip_address_list[0] + ' resolves to ' + name, prefixNick=False)
-                irc.reply(geoip + self._geoip(ip_address_list[0]), prefixNick=False)
+                (hostname, aliaslist, ipaddrlist) = socket.gethostbyaddr(i)
+                irc.reply(dns + ipaddrlist[0] + ' resolves to ' + hostname, prefixNick=False)
+                irc.reply(geoip + self._geoip(ipaddrlist[0]), prefixNick=False)
+            except socket.herror as err:
+                irc.reply('Dns Unknown host ' + i, prefixNick=False)
             except Exception as err:
-                if err.errno == 2:
+                if err == 2:
                     irc.reply('Dns Host name lookup failure ' + i, prefixNick=False)
                 else:
                     irc.reply('An error has occurred and has been logged. Please contact this bot\'s administrator for more information.')
@@ -149,9 +141,11 @@ class MyDNS(callbacks.Plugin):
     def _geoip(self, ip):
         """Search the geolocation of IP addresses."""
         from urllib.request import urlopen
+        from urllib.error import URLError
         import json
 
         url = 'http://freegeoip.net/json/' + ip
+        response = ''
         try:
             response = urlopen(url, timeout = 1).read().decode('utf8')
         except URLError as err:
@@ -175,8 +169,6 @@ class MyDNS(callbacks.Plugin):
 
 class MyException(Exception):
     pass
-
-MyDNS = internationalizeDocstring(MyDNS)
 
 Class = MyDNS
 
