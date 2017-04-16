@@ -4,17 +4,23 @@
 #
 #
 ###
+from __future__ import print_function
 
 import supybot.utils as utils
 from supybot.commands import *
 import supybot.plugins as plugins
 import supybot.ircutils as ircutils
 import supybot.callbacks as callbacks
-import validators as valid
+# For Python 3.0 and later
 from urllib.parse import urlparse
-import re, requests, socket
+from urllib.request import urlopen
+from urllib.error import URLError
+# My plugins
+import errno  # Standard errno system symbols
+import json   # JavaScript Object Notation
+import socket # Low-level networking interface
 import sys, traceback # Error traceback
-import errno # Standard errno system symbols
+import validators as valid
 
 try:
     from supybot.i18n import PluginInternationalization, internationalizeDocstring
@@ -93,8 +99,8 @@ class MyDNS(callbacks.Plugin):
                 pass
 
         if valid.domain(i) or valid.url(i): # Check if input is valid.
-            if "://" in i:
-                o = urlparse(i)
+            o = urlparse(i)
+            if o.scheme:
                 i = o.netloc
             try:
                 (hostname, aliaslist, ipaddrlist) = socket.gethostbyname_ex(i)
@@ -106,7 +112,7 @@ class MyDNS(callbacks.Plugin):
             irc.reply(geoip + self._geoip(ipaddrlist[0]), prefixNick=False)
         elif (valid.ip_address.ipv4(i) or valid.ip_address.ipv6(i)): # Check if input is a valid IPv4 or IPv6 address.
             try:                
-                (hostname, aliaslist, ipaddrlist) = socket.gethostbyaddr(i)
+                (hostname, _, ipaddrlist) = socket.gethostbyaddr(i)
                 irc.reply(dns + ipaddrlist[0] + ' resolves to ' + hostname, prefixNick=False)
                 irc.reply(geoip + self._geoip(ipaddrlist[0]), prefixNick=False)
             except socket.herror as err:
@@ -140,9 +146,6 @@ class MyDNS(callbacks.Plugin):
 
     def _geoip(self, ip):
         """Search the geolocation of IP addresses."""
-        from urllib.request import urlopen
-        from urllib.error import URLError
-        import json
 
         url = 'http://freegeoip.net/json/' + ip
         response = ''

@@ -4,6 +4,7 @@
 #
 # Python 3
 ###
+from __future__ import print_function
 
 import supybot.utils as utils
 from supybot.commands import *
