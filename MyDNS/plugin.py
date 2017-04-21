@@ -1,4 +1,4 @@
-###
+##
 # Copyright (c) 2016, Barry Suridge
 # All rights reserved.
 #
@@ -16,11 +16,9 @@ from urllib.parse import urlparse
 from urllib.request import urlopen
 from urllib.error import URLError
 # My plugins
-import errno  # Standard errno system symbols
 import json   # JavaScript Object Notation
 import socket # Low-level networking interface
 import sys, traceback # Error traceback
-import validators as valid
 
 try:
     from supybot.i18n import PluginInternationalization, internationalizeDocstring
@@ -42,7 +40,11 @@ class MyDNS(callbacks.Plugin):
         self.__parent = super(MyDNS, self)
         self.__parent.__init__(irc)
         self.encoding = 'utf8'  # irc output.
-
+        
+        geoloc    = None
+        hostname  = None
+        addresses = None
+        
         self._special_chars = (
             '-',
             '[',
@@ -53,29 +55,24 @@ class MyDNS(callbacks.Plugin):
             '{',
             '}',
             '_')
-
-    def die(self):
-        self.__parent.die()
-
-    def dns(self, irc, msg, args, i):
+        
+    threaded = True
+    
+    def dns(self, irc, msg, args, address):
         """<hostname | Nick | URL | ip or IPv6>
         An alternative to Supybot's DNS function.
         Returns the ip of <hostname | Nick | URL | ip or IPv6> or the reverse DNS hostname of <ip> using Python's socket library.
         """
-
         channel = msg.args[0]
-
+        
         if not irc.isChannel(channel):
             return
 
-        name =''
-        ip_address_list = ''
-        userHostmask = ''
         dns = color.bold(color.teal('DNS: '))
-        geoip = color.bold(color.teal('LOC: '))
+        loc = color.bold(color.teal('LOC: '))
 
-        if self._isnick(i):  # Valid nick?
-            nick = i
+        if self._isnick(address):  # Valid nick?
+            nick = address
             if not nick.lower() in irc.state.channels[channel].users:
                 irc.error('No such nick.', prefixNick=False)
                 return
@@ -85,49 +82,91 @@ class MyDNS(callbacks.Plugin):
                 irc.error('Invalid nick or hostmask', prefixNick=False)
                 return
 
-            (nick, user, host) = ircutils.splitHostmask(userHostmask)
-            try:
-                (name, _, ip_address_list) = socket.gethostbyaddr(host)
-                if (valid.ip_address.ipv4(host) or valid.ip_address.ipv6(host)): # Check if input is a valid IPv4 or IPv6 address.
-                   irc.reply(dns + ip_address_list[0] + ' resolves to ' + name, prefixNick=False)
-                else:
-                    irc.reply(dns + name + ' resolves to ' + ip_address_list[0], prefixNick=False)
-                irc.reply(geoip + self._geoip(ip_address_list[0]), prefixNick=False)
-            except socket.gaierror as err:
-                irc.error("{0}".format(err), prefixNick=False)
-            except:
-                pass
-
-        if valid.domain(i) or valid.url(i): # Check if input is valid.
-            o = urlparse(i)
-            if o.scheme:
-                i = o.netloc
-            try:
-                (hostname, aliaslist, ipaddrlist) = socket.gethostbyname_ex(i)
-            except socket.gaierror as err:
-                if err.errno == -2:
-                     irc.reply('Dns unable to resolve address ' + i, prefixNick=False)
-                     return
-            irc.reply(dns + i + ' resolves to {0} [\'{1}\'] {2}'.format(ipaddrlist[0], hostname, aliaslist), prefixNick=False)
-            irc.reply(geoip + self._geoip(ipaddrlist[0]), prefixNick=False)
-        elif (valid.ip_address.ipv4(i) or valid.ip_address.ipv6(i)): # Check if input is a valid IPv4 or IPv6 address.
-            try:                
-                (hostname, _, ipaddrlist) = socket.gethostbyaddr(i)
-                irc.reply(dns + ipaddrlist[0] + ' resolves to ' + hostname, prefixNick=False)
-                irc.reply(geoip + self._geoip(ipaddrlist[0]), prefixNick=False)
-            except socket.herror as err:
-                irc.reply('Dns Unknown host ' + i, prefixNick=False)
-            except Exception as err:
-                if err == 2:
-                    irc.reply('Dns Host name lookup failure ' + i, prefixNick=False)
-                else:
-                    irc.reply('An error has occurred and has been logged. Please contact this bot\'s administrator for more information.')
-                    # Non-fatal error traceback information
-                    self.log.info(traceback.format_exc())
-        else:
-            return
+            (nick, user, host) = ircutils.splitHostmask(userHostmask) # Split the channel users hostmask.
+            
+            self._gethostbyaddr(host) # Get the IPv4 or IPv6 address of the channel user.
+            # Format the output.
+            if (self.is_valid_ip(host)): # Check if host is a valid IPv4 or IPv6 address.
+               irc.reply(dns + addresses[0] + ' resolves to [\'{}\']'.format(hostname), prefixNick=False)
+            else:
+                irc.reply(dns + hostname + ' resolves to [\'{}\']'.format(addresses[0]), prefixNick=False)
+        else: # Is not a channel user nick.
+            if self.is_valid_ip(address): # Check if input is a valid IPv4 or IPv6 address.
+                ip = address
+                irc.reply(dns + self._gethostbyaddr(ip), prefixNick=False)
+            elif (address[:7] == 'http://' or "www." in address): # Check if input is valid.
+                domain = address
+                irc.reply(dns + self._gethostbyname(domain), prefixNick=False)
+            else:
+                irc.reply(dns + self._gethostbyaddr_(address), prefixNick=False)
+        if geoloc: # Print the geolocation of the domain or IPv4 or IPv6 address.
+            irc.reply(loc + geoloc, prefixNick=False)
+            
+        return
 
     dns = wrap(dns, ['something'])
+
+    def _gethostbyname(self, domain):
+        """Translate a host name to IPv4 or IPv6 address format.
+        """
+        global geoloc
+        d = urlparse(domain)
+        
+        if d.scheme:
+            domain = d.netloc
+
+        try:
+            (hostname, aliaslist, ipaddrlist) = socket.gethostbyname_ex(domain)
+        except socket.error as err:
+            geoloc = ''
+            return "{}".format(err)
+        
+        geoloc = self._geoip(ipaddrlist[0])
+        getfqdn = socket.getfqdn(domain)
+        return domain + ' resolves to {} [\'{}\'] [\'{}\'] {}'.format(ipaddrlist, hostname, getfqdn, aliaslist if aliaslist else '')
+    
+    def _gethostbyaddr(self, ip):
+        """Do a reverse lookup for ip.
+        """
+        global geoloc, hostname, addresses
+        try:       
+            (hostname, aliases, addresses) = socket.gethostbyaddr(ip)
+        except socket.error as err:
+            geoloc = ''
+            return "{}".format(err)
+        
+        geoloc = self._geoip(addresses[0])
+
+        return ip + ' resolves to [\'{}\'] {} {}'.format(hostname, aliases if aliases else '', addresses)
+    
+    def is_valid_ip(self, ip):
+        """Validates IP addresses.
+        """
+        return self.is_valid_ipv4(ip) or self.is_valid_ipv6(ip)
+    
+    def is_valid_ipv4(self, address):
+        """Validates IPv4 addresses.
+        """
+        try:
+            socket.inet_pton(socket.AF_INET, address)
+        except AttributeError:  # no inet_pton here, sorry
+            try:
+                socket.inet_aton(address)
+            except socket.error:
+                return False
+            return address.count('.') == 3
+        except socket.error:  # not a valid address
+            return False
+        return True
+    
+    def is_valid_ipv6(self, address):
+        """Validates IPv6 addresses.
+        """
+        try:
+            socket.inet_pton(socket.AF_INET6, address)
+        except socket.error:  # not a valid address
+            return False
+        return True
 
     def _isnick(self, nick):
         """ Checks to see if a nickname `nick` is valid.
@@ -145,17 +184,17 @@ class MyDNS(callbacks.Plugin):
         return True
 
     def _geoip(self, ip):
-        """Search the geolocation of IP addresses."""
+        """Search for the geolocation of IP addresses."""
 
         url = 'http://freegeoip.net/json/' + ip
         response = ''
         try:
             response = urlopen(url, timeout = 1).read().decode('utf8')
         except URLError as err:
-            # Non-fatal error traceback information
-            self.log.info(traceback.format_exc())
-        except socket.timeout as err:
-            raise MyException('There was an error: %r' % err)
+            if hasattr(err, 'reason'):
+                return 'We failed to reach a server. Reason: {0}'.format(err.reason)
+            elif hasattr(err, 'code'):
+                return 'The server couldn\'t fulfill the request: {0}'.format(err.code)
         data = json.loads(response)
 
         location_city = data['city']
@@ -174,6 +213,5 @@ class MyException(Exception):
     pass
 
 Class = MyDNS
-
 
 # vim:set shiftwidth=4 softtabstop=4 expandtab textwidth=79:
