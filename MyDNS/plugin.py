@@ -18,7 +18,6 @@ from urllib.error import URLError
 # My plugins
 import json   # JavaScript Object Notation
 import socket # Low-level networking interface
-import sys, traceback # Error traceback
 
 try:
     from supybot.i18n import PluginInternationalization, internationalizeDocstring
@@ -74,23 +73,18 @@ class MyDNS(callbacks.Plugin):
 
         if self._isnick(address):  # Valid nick?
             nick = address
-            if not nick.lower() in irc.state.channels[channel].users:
+            if not nick.lower() in irc.state.channels[channel].users: # Not in channel.
                 irc.error('No such nick.', prefixNick=False)
                 return
             try:
-                userHostmask = irc.state.nickToHostmask(nick)
+                userHostmask = irc.state.nickToHostmask(nick) # Invalid nick?
             except KeyError:
                 irc.error('Invalid nick or hostmask', prefixNick=False)
                 return
 
             (nick, user, host) = ircutils.splitHostmask(userHostmask) # Split the channel users hostmask.
             
-            self._gethostbyaddr(host) # Get the IPv4 or IPv6 address of the channel user.
-            # Format the output.
-            if (self.is_valid_ip(host)): # Check if host is a valid IPv4 or IPv6 address.
-               irc.reply(dns + addresses[0] + ' resolves to [\'{}\']'.format(hostname), prefixNick=False)
-            else:
-                irc.reply(dns + hostname + ' resolves to [\'{}\']'.format(addresses[0]), prefixNick=False)
+            irc.reply(dns + self._gethostbyaddr(host), prefixNick=False) # Get the IPv4 or IPv6 address of the channel user.
         else: # Is not a channel user nick.
             if self.is_valid_ip(address): # Check if input is a valid IPv4 or IPv6 address.
                 ip = address
@@ -98,8 +92,8 @@ class MyDNS(callbacks.Plugin):
             elif (address[:7] == 'http://' or "www." in address): # Check if input is valid.
                 domain = address
                 irc.reply(dns + self._gethostbyname(domain), prefixNick=False)
-            else:
-                irc.reply(dns + self._gethostbyaddr_(address), prefixNick=False)
+            else: # Is neither a URL or IP address - Virtual hostmask
+                irc.reply(dns + self._gethostbyaddr(address), prefixNick=False)
         if geoloc: # Print the geolocation of the domain or IPv4 or IPv6 address.
             irc.reply(loc + geoloc, prefixNick=False)
             
@@ -124,6 +118,7 @@ class MyDNS(callbacks.Plugin):
         
         geoloc = self._geoip(ipaddrlist[0])
         getfqdn = socket.getfqdn(domain)
+        
         return domain + ' resolves to {} [\'{}\'] [\'{}\'] {}'.format(ipaddrlist, hostname, getfqdn, aliaslist if aliaslist else '')
     
     def _gethostbyaddr(self, ip):
@@ -137,8 +132,11 @@ class MyDNS(callbacks.Plugin):
             return "{}".format(err)
         
         geoloc = self._geoip(addresses[0])
-
-        return ip + ' resolves to [\'{}\'] {} {}'.format(hostname, aliases if aliases else '', addresses)
+        s = ip.replace('.', '')
+        if s.isalpha(): # Check if host is a valid IPv4 or IPv6 address.
+           return hostname + ' resolves to [\'{}\'] {}'.format(addresses[0], aliases if aliases else '')
+        else:
+            return addresses[0] + ' resolves to [\'{}\'] {}'.format(hostname, aliases if aliases else '')
     
     def is_valid_ip(self, ip):
         """Validates IP addresses.
