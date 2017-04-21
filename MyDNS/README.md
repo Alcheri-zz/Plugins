@@ -11,10 +11,8 @@ Setting up:
 ==========
 
 * Required Python libraries:
-    - validator.py 1.2.5:
-      - pip install validator.py<br>
-      
-<code>A library for validating that dictionary values meet certain sets of parameters. Much like form validators, but for dicts.</code>
+- None.
+* This plugin uses no external libraries.
 
 Using:
 =====
