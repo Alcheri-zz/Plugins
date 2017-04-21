@@ -34,7 +34,8 @@ except ImportError:
     from color import *
 
 class MyDNS(callbacks.Plugin):
-    """An alternative to Supybot's DNS function."""
+    """An alternative to Supybot's DNS function.
+    """
 
     def __init__(self, irc):
         self.__parent = super(MyDNS, self)
@@ -184,7 +185,8 @@ class MyDNS(callbacks.Plugin):
         return True
 
     def _geoip(self, ip):
-        """Search for the geolocation of IP addresses."""
+        """Search for the geolocation of IP addresses.
+        """
 
         url = 'http://freegeoip.net/json/' + ip
         response = ''
