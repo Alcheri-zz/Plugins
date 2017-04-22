@@ -85,9 +85,11 @@ class MyDNS(callbacks.Plugin):
             if self.is_valid_ip(address): # Check if input is a valid IPv4 or IPv6 address.
                 ip = address
                 irc.reply(dns + self._gethostbyaddr(ip), prefixNick=False)
-            elif (address[:7] == 'http://' or "www." in address): # Check if input is valid.
+            # elif (address[:7] == 'http://' or address[:7] == 'https://' or 'www.' in address): # Check if input is valid.
+            elif (address[:7] == 'http://' or 'https://') or 'www.' in address: # Check if input is valid.
                 domain = address
-                irc.reply(dns + self._gethostbyname(domain), prefixNick=False)
+                irc.reply(dns + self._getaddrinfo(domain), prefixNick=False)
+                # irc.reply(dns + self._gethostbyname(domain), prefixNick=False)
             else: # Is neither a URL or IP address - Virtual hostmask
                 irc.reply(dns + self._gethostbyaddr(address), prefixNick=False)
         if geoloc: # Print the geolocation of the domain or IPv4 or IPv6 address.
@@ -97,6 +99,46 @@ class MyDNS(callbacks.Plugin):
 
     dns = wrap(dns, ['something'])
 
+    def _getconstants(self, prefix):
+        """Create a dictionary mapping socket module constants to their names."""
+        return dict( (getattr(socket, n), n)
+                     for n in dir(socket)
+                     if n.startswith(prefix)
+                     )
+    
+    def _getaddrinfo(self, address):
+        """Get detailed information of address.
+        """
+        global geoloc
+        d = urlparse(address)
+        
+        if d.scheme:
+            address = d.netloc
+
+        families  = self._getconstants('AF_')
+        types     = self._getconstants('SOCK_')
+        protocols = self._getconstants('IPPROTO_')
+
+        # for response in socket.getaddrinfo(address, 'http'):
+        try:
+            for response in socket.getaddrinfo(address, 'http',
+                                               socket.AF_INET,      # family
+                                               socket.SOCK_STREAM,  # socktype
+                                               socket.IPPROTO_TCP,  # protocol
+                                               socket.AI_CANONNAME, # flags
+                                               ):
+
+                family, socktype, proto, canonname, sockaddr = response
+        except Exception as err:
+            geoloc = ''
+            return "_getaddrinfo: {}".format(err)            
+        canonical = 'Canonical:[\'{}\']'.format(canonname) if canonname else ''
+        geoloc = self._geoip(sockaddr[0])
+        
+        return address + ' resolves to [\'{}\'] Family:{} Type:{} Protocol:{} {}'.format(sockaddr[0], \
+                                               families[family], types[socktype], protocols[proto], canonical)
+    
+    
     def _gethostbyname(self, domain):
         """Get the canonical hostname of the server, any aliases, and all of the
            available IP addresses that can be used to reach it.
@@ -134,6 +176,9 @@ class MyDNS(callbacks.Plugin):
            return hostname + ' resolves to [\'{}\'] {}'.format(addresses[0], aliases if aliases else '')
         else:
             return addresses[0] + ' resolves to [\'{}\'] {}'.format(hostname, aliases if aliases else '')
+    
+    def _isurl(self, url):
+        pass
     
     def is_valid_ip(self, ip):
         """Validates IP addresses.
