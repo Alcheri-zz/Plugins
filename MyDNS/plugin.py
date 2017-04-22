@@ -131,7 +131,7 @@ class MyDNS(callbacks.Plugin):
                 family, socktype, proto, canonname, sockaddr = response
         except Exception as err:
             geoloc = ''
-            return "_getaddrinfo: {}".format(err)            
+            return "{}".format(err)            
         canonical = 'Canonical:[\'{}\']'.format(canonname) if canonname else ''
         geoloc = self._geoip(sockaddr[0])
         
