@@ -71,15 +71,15 @@ class MyDNS(callbacks.Plugin):
         loc = color.bold(color.teal('LOC: '))
 
         if self._isnick(address):  # Valid nick?
+
             nick = address
+
             if not nick.lower() in irc.state.channels[channel].users: # Not in channel.
-                irc.error('No such nick.', prefixNick=False)
-                return
+                irc.error(format(('No such nick: %s.'), nick), Raise=True)
             try:
                 userHostmask = irc.state.nickToHostmask(nick)
-            except KeyError: # Invalid nick/hostmask.
-                irc.error('Invalid nick or hostmask', prefixNick=False)
-                return
+            except KeyError:
+                return '{}'.format(err)
             (nick, user, host) = ircutils.splitHostmask(userHostmask) # Split the channel users hostmask.           
             irc.reply(dns + self._gethostbyaddr(host), prefixNick=False) # Get the IPv4 or IPv6 address of the channel user.
         else: # Is not a channel user nick.
@@ -91,10 +91,9 @@ class MyDNS(callbacks.Plugin):
                 irc.reply(dns + self._getaddrinfo(domain), prefixNick=False)
             else: # Is neither a URL or IP address > Virtual hostmask
                 irc.reply(dns + self._gethostbyaddr(address), prefixNick=False)
+                
         if geoloc: # Print the geolocation of the given address.
             irc.reply(loc + geoloc, prefixNick=False)
-            
-        return
 
     dns = wrap(dns, ['something'])
 
@@ -171,8 +170,8 @@ class MyDNS(callbacks.Plugin):
             return '{}'.format(err)
         
         geoloc = self._geoip(addresses[0])
-        s = ip.replace('.', '')
-        if s.isalpha(): # Check whether 'ip' consists of alphabetic characters only. Print output accordingly.
+
+        if not self.is_valid_ip(ip): # Check whether 'ip' consists of alphabetic characters only. Print output accordingly.
            return hostname + ' resolves to [\'{}\'] {}'.format(addresses[0], aliases if aliases else '')
         else:
             return addresses[0] + ' resolves to [\'{}\'] {}'.format(hostname, aliases if aliases else '')
