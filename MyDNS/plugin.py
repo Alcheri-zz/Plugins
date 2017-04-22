@@ -59,7 +59,8 @@ class MyDNS(callbacks.Plugin):
     def dns(self, irc, msg, args, address):
         """<hostname | Nick | URL | ip or IPv6>
         An alternative to Supybot's DNS function.
-        Returns the ip of <hostname | Nick | URL | ip or IPv6> or the reverse DNS hostname of <ip> using Python's socket library.
+        Returns the ip of <hostname | Nick | URL | ip or IPv6> or the reverse
+        DNS hostname of <ip> using Python's socket library.
         """
         channel = msg.args[0]
         
@@ -248,8 +249,10 @@ class MyDNS(callbacks.Plugin):
         location_country = data['country_name']
         location_zip = data['zip_code']
 
-        return "City:{0}".format(location_city) + " State:{0}".format(location_state) + " TMZ:{0}".format(location_tmz) + " Long:{0}".format(location_long) +\
-            " Lat:{0}".format(location_lat) + " Country Code:{0}".format(location_code) +" Country:{0}".format(location_country) + " Post/Zip Code:{0}".format(location_zip)
+        return "City:{0}".format(location_city) + " State:{0}".format(location_state) + \
+                                               " TMZ:{0}".format(location_tmz) + " Long:{0}".format(location_long) + \
+                                               " Lat:{0}".format(location_lat) + " Country Code:{0}".format(location_code) + \
+                                               " Country:{0}".format(location_country) + " Post/Zip Code:{0}".format(location_zip)
 
 class MyException(Exception):
     pass
