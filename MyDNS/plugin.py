@@ -76,8 +76,8 @@ class MyDNS(callbacks.Plugin):
                 irc.error('No such nick.', prefixNick=False)
                 return
             try:
-                userHostmask = irc.state.nickToHostmask(nick) # Invalid nick?
-            except KeyError:
+                userHostmask = irc.state.nickToHostmask(nick)
+            except KeyError: # Invalid nick/hostmask.
                 irc.error('Invalid nick or hostmask', prefixNick=False)
                 return
             (nick, user, host) = ircutils.splitHostmask(userHostmask) # Split the channel users hostmask.           
@@ -86,14 +86,12 @@ class MyDNS(callbacks.Plugin):
             if self.is_valid_ip(address): # Check if input is a valid IPv4 or IPv6 address.
                 ip = address
                 irc.reply(dns + self._gethostbyaddr(ip), prefixNick=False)
-            # elif (address[:7] == 'http://' or address[:7] == 'https://' or 'www.' in address): # Check if input is valid.
-            elif (address[:7] == 'http://' or 'https://') or 'www.' in address: # Check if input is valid.
+            elif (address[:7] == 'http://' or 'https://') or 'www.' in address: # Check if input is a URL.
                 domain = address
                 irc.reply(dns + self._getaddrinfo(domain), prefixNick=False)
-                # irc.reply(dns + self._gethostbyname(domain), prefixNick=False)
-            else: # Is neither a URL or IP address - Virtual hostmask
+            else: # Is neither a URL or IP address > Virtual hostmask
                 irc.reply(dns + self._gethostbyaddr(address), prefixNick=False)
-        if geoloc: # Print the geolocation of the domain or IPv4 or IPv6 address.
+        if geoloc: # Print the geolocation of the given address.
             irc.reply(loc + geoloc, prefixNick=False)
             
         return
@@ -132,7 +130,7 @@ class MyDNS(callbacks.Plugin):
                 family, socktype, proto, canonname, sockaddr = response
         except Exception as err:
             geoloc = ''
-            return "{}".format(err)            
+            return '{}'.format(err)            
         canonical = 'Canonical:[\'{}\']'.format(canonname) if canonname else ''
         geoloc = self._geoip(sockaddr[0])
         
@@ -152,14 +150,15 @@ class MyDNS(callbacks.Plugin):
 
         try:
             (hostname, aliaslist, ipaddrlist) = socket.gethostbyname_ex(domain)
-        except socket.error as err:
+        except socket.error as err: # Name/service not known or failure in name resolution
             geoloc = ''
-            return "{}".format(err)
+            return '{}'.format(err)
         
         geoloc = self._geoip(ipaddrlist[0])
         getfqdn = socket.getfqdn(domain)
         
-        return domain + ' resolves to {} [\'{}\'] [\'{}\'] {}'.format(ipaddrlist, hostname, getfqdn, aliaslist if aliaslist else '')
+        return domain + ' resolves to {} [\'{}\'] [\'{}\'] {}'.format(ipaddrlist, hostname, \
+                                               getfqdn, aliaslist if aliaslist else '')
     
     def _gethostbyaddr(self, ip):
         """Do a reverse lookup for ip.
@@ -167,13 +166,13 @@ class MyDNS(callbacks.Plugin):
         global geoloc
         try:       
             (hostname, aliases, addresses) = socket.gethostbyaddr(ip)
-        except socket.error as err:
+        except socket.error as err: # Name or service not known
             geoloc = ''
-            return "{}".format(err)
+            return '{}'.format(err)
         
         geoloc = self._geoip(addresses[0])
         s = ip.replace('.', '')
-        if s.isalpha(): # Check whether 'ip' consists of alphabetic characters only.
+        if s.isalpha(): # Check whether 'ip' consists of alphabetic characters only. Print output accordingly.
            return hostname + ' resolves to [\'{}\'] {}'.format(addresses[0], aliases if aliases else '')
         else:
             return addresses[0] + ' resolves to [\'{}\'] {}'.format(hostname, aliases if aliases else '')

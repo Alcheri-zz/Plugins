@@ -101,20 +101,18 @@ class Titlerz(callbacks.Plugin):
         if __builtins__['any'](url.endswith(x) for x in badexts):
             path = urlparse(url).path
             ext = os.path.splitext(path)[1]
-            return "open_url: ERROR. Bad extension \'{0}\'".format(ext)
+            return "ERROR. Bad extension \'{0}\'".format(ext)
 
         # Requests: HTTP for Humans
         req = Request(url)
-        # try/except block with error handling for each.
+        # try/except block with error handling.
         try:
             res = urlopen(req, timeout=4)
         except URLError as err:
             if hasattr(err, 'reason'):
-                self.log.error('open_url: We failed to reach a server: {0}'.format(err.reason))
-                return 'open_url: We failed to reach a server. Reason: {0}'.format(err.reason)
+                return 'We failed to reach a server. Reason: {0}'.format(err.reason)
             elif hasattr(err, 'code'):
-                self.log.error('open_url: The server couldn\'t fulfill the request. Reason: {0}'.format(err.code))
-                return 'open_url: The server couldn\'t fulfill the request: {0}'.format(err.code)
+                return 'The server couldn\'t fulfill the request: {0}'.format(err.code)
         response = res.info()
         res.close()
         if response['content-type'].startswith('audio/') or response['content-type'].startswith('video/'):
@@ -125,7 +123,7 @@ class Titlerz(callbacks.Plugin):
             try:
                 o = self._gettitle(url)
             except Exception as err:
-                return 'open_url: Error: {0}'.format(err)
+                return 'Error: {0}'.format(err)
                 # Non-fatal error traceback information
                 self.log.info(traceback.format_exc())
                 # or
@@ -241,7 +239,7 @@ class Titlerz(callbacks.Plugin):
         try:  # try/except because images can be corrupt.
             img = Image.open(BytesIO(response.content))
         except Exception as err:
-            return '_getimg: ERROR: {0} is an invalid image I cannot read :: {1}'.format(url, err)
+            return 'ERROR: {0} is an invalid image I cannot read :: {1}'.format(url, err)
         width, height = img.size
         if img.format == 'GIF':  # check to see if animated.
             try:
