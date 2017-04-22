@@ -11,8 +11,8 @@ Setting up:
 ==========
 
 * Required Python libraries:
-- None.
-* This plugin uses no external libraries.
+    - None.
+    * This plugin uses no external libraries.
 
 Using:
 =====
