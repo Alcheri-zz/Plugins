@@ -11,8 +11,8 @@ Setting up:
 ==========
 
 * Required Python libraries:
-    - None.
-    * This plugin uses no external libraries.
+    - future
+    * pip install future
 
 Using:
 =====
