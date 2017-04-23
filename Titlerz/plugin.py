@@ -6,7 +6,9 @@
 # All rights reserved.
 #
 ###
-from __future__ import print_function
+from __future__ import (absolute_import, division,
+                        print_function, unicode_literals)
+from builtins import *
 
 import supybot.conf as conf
 import supybot.utils as utils
