@@ -89,7 +89,7 @@ class MyDNS(callbacks.Plugin):
             if self.is_valid_ip(address): # Check if input is a valid IPv4 or IPv6 address.
                 ip = address
                 irc.reply(dns + self._gethostbyaddr(ip), prefixNick=False)
-            elif (address[:7] == 'http://' or 'https://') or 'www.' in address: # Check if input is a URL.
+            elif self._getdomain(address) or 'www.' in address: # Check if input is a URL.
                 domain = address
                 irc.reply(dns + self._getaddrinfo(domain), prefixNick=False)
             else: # Is neither a URL or IP address > Virtual hostmask
@@ -179,8 +179,8 @@ class MyDNS(callbacks.Plugin):
         else:
             return addresses[0] + ' resolves to [\'{}\'] {}'.format(hostname, aliases if aliases else '')
     
-    def _isurl(self, url):
-        pass
+    def _getdomain(self, url):
+        return urlparse(url)[1]
     
     def is_valid_ip(self, ip):
         """Validates IP addresses.
