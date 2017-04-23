@@ -1,3 +1,5 @@
+###
+# coding: utf-8
 ##
 # Copyright (c) 2016, Barry Suridge
 # All rights reserved.
@@ -5,6 +7,14 @@
 #
 ###
 from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import division
+from __future__ import absolute_import
+
+from builtins import dict
+from builtins import super
+from future import standard_library
+standard_library.install_aliases()
 
 import supybot.utils as utils
 from supybot.commands import *
@@ -39,9 +49,8 @@ class MyDNS(callbacks.Plugin):
     def __init__(self, irc):
         self.__parent = super(MyDNS, self)
         self.__parent.__init__(irc)
-        self.encoding = 'utf8'  # irc output.
         
-        geoloc    = None
+        geoloc = None
         
         self._special_chars = (
             '-',
@@ -75,7 +84,7 @@ class MyDNS(callbacks.Plugin):
             nick = address
 
             if not nick.lower() in irc.state.channels[channel].users: # Not in channel.
-                irc.error(format(('No such nick: %s.'), nick), Raise=True)
+                irc.error('No such nick.', Raise=True)
             try:
                 userHostmask = irc.state.nickToHostmask(nick)
             except KeyError:
