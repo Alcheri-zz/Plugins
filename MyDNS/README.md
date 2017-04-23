@@ -12,7 +12,8 @@ Setting up:
 
 * Required Python libraries:
     - future
-    * pip install future
+    * pip3 install future
+- Or use pip if this points to your Py3 environment.
 
 Using:
 =====
