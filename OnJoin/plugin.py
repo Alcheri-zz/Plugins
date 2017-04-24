@@ -4,7 +4,10 @@
 #
 # Python 3
 ###
-from __future__ import print_function
+from __future__ import (absolute_import, division,
+                        print_function, unicode_literals)
+from future.utils import raise_from
+from builtins import *
 
 import supybot.utils as utils
 from supybot.commands import *
@@ -18,8 +21,7 @@ except ImportError:
     # Placeholder that allows to run the plugin on a bot
     # without the i18n module
     _ = lambda x: x
-import random, os
-import traceback # Error traceback
+import random
 from pathlib import Path
 # Text formatting library
 try:
@@ -35,7 +37,6 @@ class OnJoin(callbacks.Plugin):
     def __init__(self, irc):
         self.__parent = super(OnJoin, self)
         self.__parent.__init__(irc)
-        self.encoding = 'utf8'  # irc output.
 
     def die(self):
         self.__parent.die()
@@ -45,11 +46,11 @@ class OnJoin(callbacks.Plugin):
         # Check if in a channel and see if we should be 'disabled' in it.
         # config channel #channel plugins.onjoin.enable True or False (or On or Off)
         if ircutils.isChannel(channel) and self.registryValue('enable', channel):
+            p = Path('plugins/OnJoin/quotes.txt').resolve()
+            fp = str(p)
+            line_num = 0
+            selected_line = ''
             try:
-                p = Path('plugins/OnJoin/quotes.txt').resolve()
-                fp = str(p)
-                line_num = 0
-                selected_line = ''
                 with open(fp) as f:
                     while 1:
                         line = f.readline()
@@ -59,14 +60,17 @@ class OnJoin(callbacks.Plugin):
                             selected_line = line
                 # It's not the bot.
                 if ircutils.strEqual(irc.nick, msg.nick) is False:
-                    irc.reply(color.bold(selected_line.strip()) , notice=True, private=True, to=msg.nick)
+                    irc.reply(color.teal(selected_line.strip()) , notice=True, private=True, to=msg.nick)
                 else:
                     return None
-            except Exception as err:
+            except IOError as err:
                 # Non-fatal error traceback information
-                self.log.info(traceback.format_exc())
+                raise_from(DatabaseError('failed to open'), err)
         else:
             return None
+
+class DatabaseError(Exception):
+    pass
 
 Class = OnJoin
 

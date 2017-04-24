@@ -30,7 +30,7 @@ except ImportError:
     # Placeholder that allows to run the plugin on a bot
     # without the i18n module
     _ = lambda x: x
-# Text formatting library
+# Text colour formatting library
 try:
     from .local import color
 except ImportError:
@@ -79,17 +79,14 @@ class MyDNS(callbacks.Plugin):
 
             if not nick.lower() in irc.state.channels[channel].users: # Not in channel.
                 irc.error('No such nick.', Raise=True)
-            try:
-                userHostmask = irc.state.nickToHostmask(nick)
-            except KeyError:
-                return '{}'.format(err)
+            userHostmask = irc.state.nickToHostmask(nick)
             (nick, user, host) = ircutils.splitHostmask(userHostmask) # Split the channel users hostmask.           
-            irc.reply(dns + self._gethostbyaddr(host), prefixNick=False) # Get the IPv4 or IPv6 address of the channel user.
+            irc.reply(dns + self._gethostbyaddr(host), prefixNick=False) # Reverse lookup.
         else: # Is not a channel user nick.
             if self.is_valid_ip(address): # Check if input is a valid IPv4 or IPv6 address.
                 ip = address
-                irc.reply(dns + self._gethostbyaddr(ip), prefixNick=False)
-            elif self._getdomain(address) or 'www.' in address: # Check if input is a URL.
+                irc.reply(dns + self._gethostbyaddr(ip), prefixNick=False) # Reverse lookup.
+            elif self._getdomain(address) or 'www.' in address: # Check if input is a domain.
                 domain = address
                 irc.reply(dns + self._getaddrinfo(domain), prefixNick=False)
             else: # Is neither a URL or IP address > Virtual hostmask
@@ -133,7 +130,7 @@ class MyDNS(callbacks.Plugin):
         except Exception as err:
             geoloc = ''
             return '{}'.format(err)            
-        canonical = 'Canonical:[\'{}\']'.format(canonname) if canonname else ''
+        canonical = format(('Canonical:[\'%s\']'), canonname) if canonname else ''
         geoloc = self._geoip(sockaddr[0])
         
         return address + ' resolves to [\'{}\'] Family:{} Type:{} Protocol:{} {}'.format(sockaddr[0], \
@@ -175,7 +172,7 @@ class MyDNS(callbacks.Plugin):
         geoloc = self._geoip(addresses[0])
 
         if not self.is_valid_ip(ip): # Check whether 'ip' consists of alphabetic characters only. Print output accordingly.
-           return hostname + ' resolves to [\'{}\'] {}'.format(addresses[0], aliases if aliases else '')
+            return hostname + ' resolves to [\'{}\'] {}'.format(addresses[0], aliases if aliases else '')
         else:
             return addresses[0] + ' resolves to [\'{}\'] {}'.format(hostname, aliases if aliases else '')
     

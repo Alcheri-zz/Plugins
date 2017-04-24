@@ -36,6 +36,7 @@ from bs4 import BeautifulSoup # Library for pulling data out of HTML and XML fil
 import requests # HTTP library
 import os # Operating system dependent functionality.
 from io import BytesIO # Images
+
 try:
     from PIL import Image # Pillow
 except ImportError:
@@ -45,7 +46,7 @@ try:
 except ImportError:
     raise TitlerError('ERROR: I did not find python-magic installed. ' + irc.nick + ' cannot continue.')
 import math # Mathematical functions.
-# Text formatting library
+# Text colour formatting library
 try:
     from .local import color
 except ImportError:
@@ -138,9 +139,7 @@ class Titlerz(callbacks.Plugin):
     def _gettitle(self, url, gd=True, o=None):
         """Generic title fetcher for non-domain-specific titles."""
 
-        desc     = None
-        shorturl = None
-        longurl  = None
+        desc, shorturl, longurl = None
 
         self.log.info('_gettitle: Trying to open: {0}'.format(url))
 
@@ -163,12 +162,12 @@ class Titlerz(callbacks.Plugin):
                 desc = self._cleandesc(des['content'].strip())
         if title:
             if __builtins__['any'](s in urlhostname for s in self.shortUrlServices):
-                longurl = self._longurl(url).replace('http://', '')
+                longurl = self._longurl(url)
             else:
                 request_url = ('http://tinyurl.com/api-create.php?' + urlencode({'url':url}))
                 with closing(urlopen(request_url)) as response:
                     shorturl = response.read().decode('utf-8')
-            o = "{0} - {1}".format(longurl if not shorturl else shorturl, title)
+            o = "{0} - ({1})".format(title, longurl if not shorturl else shorturl)
         else:
             o = None
         if desc:
@@ -211,7 +210,7 @@ class Titlerz(callbacks.Plugin):
         a = {'k' : 1, 'm': 2, 'g' : 3, 't' : 4, 'p' : 5, 'e' : 6 }
         r = float(bytes)
         for i in range(a[to]):
-            r = r / bsize
+            r = r // bsize
 
         return math.ceil(float(r))
 
@@ -226,15 +225,15 @@ class Titlerz(callbacks.Plugin):
             typeoffile = magic.from_buffer(response.content)
             return 'Content type: {0} - Size: {1}'.format(typeoffile, str(self._bytesto(size, 'k')))
         except Exception as err:  # give a detailed error here in the logs.
-            self.log.error('ERROR: _filetype: error trying to parse {0} via other (else) :: {1}'.format(url, err))
-            self.log.error('ERROR: _filetype: no handler for {0} at {1}'.format(response.headers['content-type'], url))
+            self.log.error('ERROR: error trying to parse {0} via other (else) :: {1}'.format(url, err))
+            self.log.error('ERROR: no handler for {0} at {1}'.format(response.headers['content-type'], url))
             return None
 
     # Process image data from supplied URL.
     def _getimg(self, url, size):
         """Displays image information in channel"""
         
-        self.log.info('_getimg: Trying to open: {0}'.format(url))
+        self.log.info('Trying to open: {0}'.format(url))
 
         response = requests.get(url, timeout=4)
         response.close()
