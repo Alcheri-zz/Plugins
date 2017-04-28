@@ -133,16 +133,16 @@ class MyDNS(callbacks.Plugin):
         
         if d.scheme:
             domain = d.netloc
-
+        
         try:
-            (hostname, aliaslist, ipaddrlist) = socket.gethostbyname_ex(domain)
+            (hostname, _, ipaddrlist) = socket.gethostbyname_ex(domain)
         except socket.timeout as err: # Name/service not known or failure in name resolution
             geoloc = ''
             return '{}'.format(err)
         
         geoloc = self._geoip(ipaddrlist[0])
         
-        return domain + ' resolves to {} [\'{}\'] {} '.format(ipaddrlist, hostname, aliaslist if aliaslist else '')
+        return domain + ' resolves to {} [\'{}\']'.format(ipaddrlist[0], self._getipv6(domain))
     
     def _gethostbyaddr(self, ip):
         """Do a reverse lookup for ip.
@@ -150,7 +150,7 @@ class MyDNS(callbacks.Plugin):
         global geoloc
    
         try:
-            (hostname, aliases, addresses) = socket.gethostbyaddr(ip)
+            (hostname, _, addresses) = socket.gethostbyaddr(ip)
         except socket.herror as err:
             geoloc = ''
             return '{}'.format(err)
@@ -158,13 +158,22 @@ class MyDNS(callbacks.Plugin):
         geoloc = self._geoip(addresses[0])
 
         if not self.is_valid_ip(ip): # Check whether 'ip' consists of alphabetic characters only. Print output accordingly.
-            return hostname + ' resolves to [\'{}\'] {}'.format(addresses[0], aliases if aliases else '')
+            return hostname + ' resolves to [\'{}\']'.format(addresses[0])
         else:
-            return addresses[0] + ' resolves to [\'{}\'] {}'.format(hostname, aliases if aliases else '')
+            return addresses[0] + ' resolves to [\'{}\']'.format(hostname)
     
     def _getdomain(self, url):
         return urlparse(url)[1]
-    
+
+    def _getipv6(self, host, port=0):
+        # search only for the wanted v6 addresses
+        try:
+            result = socket.getaddrinfo(host, port, socket.AF_INET6)
+        except Exception as err:
+            return '{}'.format(err)
+        # return result # or:
+        return result[0][4][0] # just returns the first answer and only the address
+
     def is_valid_ip(self, ip):
         """Validates IP addresses.
         """
