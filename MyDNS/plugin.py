@@ -40,9 +40,7 @@ class MyDNS(callbacks.Plugin):
     def __init__(self, irc):
         self.__parent = super(MyDNS, self)
         self.__parent.__init__(irc)
-        
-        geoloc = None
-        
+               
         self._special_chars = (
             '-',
             '[',
@@ -64,24 +62,18 @@ class MyDNS(callbacks.Plugin):
         """
         channel = msg.args[0]
         
-        dns = color.bold(color.teal('DNS: '))
-        loc = color.bold(color.teal('LOC: '))
-
         if self.is_valid_ip(address):
-                irc.reply(dns + self._gethostbyaddr(address), prefixNick=False) # Reverse lookup.
+                irc.reply(self._gethostbyaddr(address), prefixNick=False) # Reverse lookup.
         elif self._isnick(address):  # Valid nick?
             nick = address
             if not nick.lower() in irc.state.channels[channel].users: # Not in channel.
                 irc.error('No such nick.', Raise=True)
             userHostmask = irc.state.nickToHostmask(nick)
             (nick, user, host) = ircutils.splitHostmask(userHostmask) # Split the channel users hostmask.           
-            irc.reply(dns + self._gethostbyaddr(host), prefixNick=False) # Reverse lookup.
+            irc.reply(self._gethostbyaddr(host), prefixNick=False) # Reverse lookup.
         else:
-            irc.reply(dns + self._gethostbyname(address), prefixNick=False)
+            irc.reply(self._gethostbyname(address), prefixNick=False)
             
-        if geoloc: # Print the geolocation of the given address.
-            irc.reply(loc + geoloc, prefixNick=False)
-
     dns = wrap(dns, ['something'])
 
     def _getconstants(self, prefix):
@@ -94,7 +86,6 @@ class MyDNS(callbacks.Plugin):
     def _getaddrinfo(self, address):
         """Get detailed information of address.
         """
-        global geoloc
         d = urlparse(address)
         
         if d.scheme:
@@ -114,21 +105,26 @@ class MyDNS(callbacks.Plugin):
                                                ):
 
                 family, socktype, proto, canonname, sockaddr = response
-        except Exception as err:
-            geoloc = ''
-            return '{}'.format(err)            
-        canonical = format(('Canonical:[\'%s\']'), canonname) if canonname else ''
-        geoloc = self._geoip(sockaddr[0])
+        except socket.timeout as err: # Timed out trying to connect.
+            return '{}'.format(err)
+        except socket.error as err: # Catch any errors.
+            return '{}'.format(err)
         
-        return address + ' resolves to [\'{}\'] Family:{} Type:{} Protocol:{} {}'.format(sockaddr[0], \
+        canonical = 'Canonical:[%s]' % canonname if canonname else ''
+        
+        ipv6   = self._getipv6(address)
+        
+        txt = '[%s]' % ipv6 if ipv6 else ''
+        
+        return address + ' resolves to [\'{}\'] {} Family:{} Type:{} Protocol:{} {}'.format(sockaddr[0], txt,\
                                                families[family], types[socktype], protocols[proto], canonical)
     
     
-    def _gethostbyname(self, domain):
+    def _gethostbyname(self, domain, ipv6=None, txt=None):
         """Get the canonical hostname of the server, any aliases, and all of the
            available IP addresses that can be used to reach it.
         """
-        global geoloc
+
         d = urlparse(domain)
         
         if d.scheme:
@@ -136,43 +132,46 @@ class MyDNS(callbacks.Plugin):
         
         try:
             (hostname, _, ipaddrlist) = socket.gethostbyname_ex(domain)
-        except socket.timeout as err: # Name/service not known or failure in name resolution
-            geoloc = ''
+        except socket.timeout as err: # Timed out trying to connect.
+            return '{}'.format(err)
+        except socket.error as err: # Catch any errors.
             return '{}'.format(err)
         
-        geoloc = self._geoip(ipaddrlist[0])
-        
-        return domain + ' resolves to {} [\'{}\']'.format(ipaddrlist[0], self._getipv6(domain))
+        ipv6   = self._getipv6(domain)
+        txt = '[%s]' % ipv6 if ipv6 else ''
+
+        return color.bold(color.teal('DNS: ')) + domain + ' resolves to [{}] {} {}{}'\
+                                      .format(ipaddrlist[0], txt, color.bold(color.teal('LOC: ')), self._geoip(ipaddrlist[0]))       
     
-    def _gethostbyaddr(self, ip):
+    def _gethostbyaddr(self, ip, txt=None):
         """Do a reverse lookup for ip.
-        """
-        global geoloc
-   
+        """  
         try:
             (hostname, _, addresses) = socket.gethostbyaddr(ip)
-        except socket.herror as err:
-            geoloc = ''
+        except socket.timeout as err: # Name/service not known or failure in name resolution
+            return '{}'.format(err)
+        except socket.error as err: # Catch any errors.
             return '{}'.format(err)
         
-        geoloc = self._geoip(addresses[0])
-
         if not self.is_valid_ip(ip): # Check whether 'ip' consists of alphabetic characters only. Print output accordingly.
-            return hostname + ' resolves to [\'{}\']'.format(addresses[0])
+            return color.bold(color.teal('DNS: ')) + hostname + ' resolves to [{}] {}{}'\
+                                      .format(addresses[0], color.bold(color.teal('LOC: ')), self._geoip(addresses[0]))
         else:
-            return addresses[0] + ' resolves to [\'{}\']'.format(hostname)
+            return color.bold(color.teal('DNS: ')) + addresses[0] + ' resolves to [\'{}\'] {}{}'\
+                                      .format(hostname, color.bold(color.teal('LOC: ')), self._geoip(addresses[0]))
     
     def _getdomain(self, url):
         return urlparse(url)[1]
 
     def _getipv6(self, host, port=0):
-        # search only for the wanted v6 addresses
+        """Search only for the wanted IPv6 addresses.
+        """
         try:
             result = socket.getaddrinfo(host, port, socket.AF_INET6)
         except Exception as err:
-            return '{}'.format(err)
+            return None
         # return result # or:
-        return result[0][4][0] # just returns the first answer and only the address
+        return result[0][4][0] # Just returns the first answer and only the address.
 
     def is_valid_ip(self, ip):
         """Validates IP addresses.
@@ -184,13 +183,13 @@ class MyDNS(callbacks.Plugin):
         """
         try:
             socket.inet_pton(socket.AF_INET, address)
-        except AttributeError:  # no inet_pton here, sorry
+        except AttributeError:  # No inet_pton here, sorry.
             try:
                 socket.inet_aton(address)
             except socket.error:
                 return False
             return address.count('.') == 3
-        except socket.error:  # not a valid address
+        except socket.error:  # Not a valid address.
             return False
         return True
     
@@ -199,7 +198,7 @@ class MyDNS(callbacks.Plugin):
         """
         try:
             socket.inet_pton(socket.AF_INET6, address)
-        except socket.error:  # not a valid address
+        except socket.error:  # Not a valid address.
             return False
         return True
 
