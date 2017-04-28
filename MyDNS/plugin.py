@@ -31,10 +31,7 @@ except ImportError:
     # without the i18n module
     _ = lambda x: x
 # Text colour formatting library
-try:
-    from .local import color
-except ImportError:
-    from color import *
+from .local import color
 
 class MyDNS(callbacks.Plugin):
     """An alternative to Supybot's DNS function.
@@ -67,31 +64,21 @@ class MyDNS(callbacks.Plugin):
         """
         channel = msg.args[0]
         
-        if not irc.isChannel(channel):
-            return
-
         dns = color.bold(color.teal('DNS: '))
         loc = color.bold(color.teal('LOC: '))
 
-        if self._isnick(address):  # Valid nick?
-
+        if self.is_valid_ip(address):
+                irc.reply(dns + self._gethostbyaddr(address), prefixNick=False) # Reverse lookup.
+        elif self._isnick(address):  # Valid nick?
             nick = address
-
             if not nick.lower() in irc.state.channels[channel].users: # Not in channel.
                 irc.error('No such nick.', Raise=True)
             userHostmask = irc.state.nickToHostmask(nick)
             (nick, user, host) = ircutils.splitHostmask(userHostmask) # Split the channel users hostmask.           
             irc.reply(dns + self._gethostbyaddr(host), prefixNick=False) # Reverse lookup.
-        else: # Is not a channel user nick.
-            if self.is_valid_ip(address): # Check if input is a valid IPv4 or IPv6 address.
-                ip = address
-                irc.reply(dns + self._gethostbyaddr(ip), prefixNick=False) # Reverse lookup.
-            elif self._getdomain(address) or 'www.' in address: # Check if input is a domain.
-                domain = address
-                irc.reply(dns + self._getaddrinfo(domain), prefixNick=False)
-            else: # Is neither a URL or IP address > Virtual hostmask
-                irc.reply(dns + self._gethostbyaddr(address), prefixNick=False)
-                
+        else:
+            irc.reply(dns + self._gethostbyname(address), prefixNick=False)
+            
         if geoloc: # Print the geolocation of the given address.
             irc.reply(loc + geoloc, prefixNick=False)
 
@@ -149,23 +136,22 @@ class MyDNS(callbacks.Plugin):
 
         try:
             (hostname, aliaslist, ipaddrlist) = socket.gethostbyname_ex(domain)
-        except socket.error as err: # Name/service not known or failure in name resolution
+        except socket.timeout as err: # Name/service not known or failure in name resolution
             geoloc = ''
             return '{}'.format(err)
         
         geoloc = self._geoip(ipaddrlist[0])
-        getfqdn = socket.getfqdn(domain)
         
-        return domain + ' resolves to {} [\'{}\'] [\'{}\'] {}'.format(ipaddrlist, hostname, \
-                                               getfqdn, aliaslist if aliaslist else '')
+        return domain + ' resolves to {} [\'{}\'] {} '.format(ipaddrlist, hostname, aliaslist if aliaslist else '')
     
     def _gethostbyaddr(self, ip):
         """Do a reverse lookup for ip.
         """
         global geoloc
-        try:       
+   
+        try:
             (hostname, aliases, addresses) = socket.gethostbyaddr(ip)
-        except socket.error as err: # Name or service not known
+        except socket.herror as err:
             geoloc = ''
             return '{}'.format(err)
         
