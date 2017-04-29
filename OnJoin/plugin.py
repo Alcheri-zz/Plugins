@@ -35,8 +35,7 @@ class OnJoin(callbacks.Plugin):
     public = False
 
     def __init__(self, irc):
-        self.__parent = super(OnJoin, self)
-        self.__parent.__init__(irc)
+        self.__parent = super().__init__(irc)
 
     def die(self):
         self.__parent.die()

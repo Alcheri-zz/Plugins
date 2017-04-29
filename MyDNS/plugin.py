@@ -38,8 +38,7 @@ class MyDNS(callbacks.Plugin):
     """
 
     def __init__(self, irc):
-        self.__parent = super(MyDNS, self)
-        self.__parent.__init__(irc)
+        self.__parent = super().__init__(irc)
                
         self._special_chars = (
             '-',

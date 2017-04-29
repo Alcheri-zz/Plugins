@@ -56,8 +56,7 @@ class Titlerz(callbacks.Plugin):
     """Titlerz plugin."""
 
     def __init__(self, irc):
-        self.__parent = super(Titlerz, self)
-        self.__parent.__init__(irc)
+        self.__parent = super().__init__(irc)
 
         """
         List of domains of known URL shortening services.
@@ -86,9 +85,6 @@ class Titlerz(callbacks.Plugin):
             'tiny.cc',
             'tr.im',
             'tinyurl.com']
-
-    def die(self):
-        self.__parent.die()
 
     #########################
     # HTTP HELPER FUNCTIONS #
