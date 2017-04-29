@@ -141,9 +141,9 @@ class MyDNS(callbacks.Plugin):
         txt = '[%s]' % ipv6 if ipv6 else ''
 
         return color.bold(color.teal('DNS: ')) + domain + ' resolves to [{}] {} {}{}'\
-                                      .format(ipaddrlist[0], txt, color.bold(color.teal('LOC: ')), self._geoip(ipaddrlist[0]))       
+                                      .format(ipaddrlist[0], txt, color.bold(color.teal('LOC (near): ')), self._geoip(ipaddrlist[0]))       
     
-    def _gethostbyaddr(self, ip, txt=None):
+    def _gethostbyaddr(self, ip):
         """Do a reverse lookup for ip.
         """  
         try:
@@ -155,10 +155,10 @@ class MyDNS(callbacks.Plugin):
         
         if not self.is_valid_ip(ip): # Check whether 'ip' consists of alphabetic characters only. Print output accordingly.
             return color.bold(color.teal('DNS: ')) + hostname + ' resolves to [{}] {}{}'\
-                                      .format(addresses[0], color.bold(color.teal('LOC: ')), self._geoip(addresses[0]))
+                                      .format(addresses[0], color.bold(color.teal('LOC (near): ')), self._geoip(addresses[0]))
         else:
             return color.bold(color.teal('DNS: ')) + addresses[0] + ' resolves to [\'{}\'] {}{}'\
-                                      .format(hostname, color.bold(color.teal('LOC: ')), self._geoip(addresses[0]))
+                                      .format(hostname, color.bold(color.teal('LOC (near): ')), self._geoip(addresses[0]))
     
     def _getdomain(self, url):
         return urlparse(url)[1]
@@ -217,12 +217,13 @@ class MyDNS(callbacks.Plugin):
                 return False
         return True
 
-    def _geoip(self, ip):
+    def _geoip(self, ip, response=None, data=None):
         """Search for the geolocation of IP addresses.
+        Accuracy not guaranteed.
         """
 
         url = 'http://freegeoip.net/json/' + ip
-        response = ''
+        
         try:
             response = urlopen(url, timeout = 1).read().decode('utf8')
         except URLError as err:
@@ -245,9 +246,6 @@ class MyDNS(callbacks.Plugin):
                                                " TMZ:{0}".format(location_tmz) + " Long:{0}".format(location_long) + \
                                                " Lat:{0}".format(location_lat) + " Country Code:{0}".format(location_code) + \
                                                " Country:{0}".format(location_country) + " Post/Zip Code:{0}".format(location_zip)
-
-class MyException(Exception):
-    pass
 
 Class = MyDNS
 
