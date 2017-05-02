@@ -122,11 +122,11 @@ class Titlerz(callbacks.Plugin):
             try:
                 o = self._gettitle(url)
             except Exception as err:
-                return 'Error: {0}'.format(err)
                 # Non-fatal error traceback information
                 self.log.info(traceback.format_exc())
                 # or
                 # self.log.info(sys.exc_info()[0])
+                return 'Error: {0}'.format(err)
         else:
             # handle any other filetype using libmagic.
             o = self._filetype(url)
@@ -135,7 +135,9 @@ class Titlerz(callbacks.Plugin):
     def _gettitle(self, url, gd=True, o=None):
         """Generic title fetcher for non-domain-specific titles."""
 
-        desc, shorturl, longurl = None
+        desc     = None
+        shorturl = None
+        longurl  = None
 
         self.log.info('_gettitle: Trying to open: {0}'.format(url))
 
