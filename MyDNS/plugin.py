@@ -65,82 +65,42 @@ class MyDNS(callbacks.Plugin):
                 irc.reply(self._gethostbyaddr(address), prefixNick=False) # Reverse lookup.
         elif self._isnick(address):  # Valid nick?
             nick = address
-            if not nick.lower() in irc.state.channels[channel].users: # Not in channel.
+            #if not nick.lower() in irc.state.channels[channel].users: # Not in channel.
+            #    irc.error('No such nick.', Raise=True)
+            try:
+                userHostmask = irc.state.nickToHostmask(nick)
+                (nick, user, host) = ircutils.splitHostmask(userHostmask) # Split the channel users hostmask.           
+                irc.reply(self._gethostbyaddr(host), prefixNick=False) # Reverse lookup.
+            except KeyError:
                 irc.error('No such nick.', Raise=True)
-            userHostmask = irc.state.nickToHostmask(nick)
-            (nick, user, host) = ircutils.splitHostmask(userHostmask) # Split the channel users hostmask.           
-            irc.reply(self._gethostbyaddr(host), prefixNick=False) # Reverse lookup.
         else:
-            irc.reply(self._gethostbyname(address), prefixNick=False)
+            irc.reply(self._getaddrinfo(address), prefixNick=False)
             
     dns = wrap(dns, ['something'])
-
-    def _getconstants(self, prefix):
-        """Create a dictionary mapping socket module constants to their names."""
-        return dict( (getattr(socket, n), n)
-                     for n in dir(socket)
-                     if n.startswith(prefix)
-                     )
     
-    def _getaddrinfo(self, address):
-        """Get detailed information of address.
-        """
-        d = urlparse(address)
-        
-        if d.scheme:
-            address = d.netloc
-
-        families  = self._getconstants('AF_')
-        types     = self._getconstants('SOCK_')
-        protocols = self._getconstants('IPPROTO_')
-
-        # for response in socket.getaddrinfo(address, 'http'):
-        try:
-            for response in socket.getaddrinfo(address, 'http',
-                                               socket.AF_INET,      # family
-                                               socket.SOCK_STREAM,  # socktype
-                                               socket.IPPROTO_TCP,  # protocol
-                                               socket.AI_CANONNAME, # flags
-                                               ):
-
-                family, socktype, proto, canonname, sockaddr = response
-        except socket.timeout as err: # Timed out trying to connect.
-            return '{}'.format(err)
-        except socket.error as err: # Catch any errors.
-            return '{}'.format(err)
-        
-        canonical = 'Canonical:[%s]' % canonname if canonname else ''
-        
-        ipv6   = self._getipv6(address)
-        
-        txt = '[%s]' % ipv6 if ipv6 else ''
-        
-        return address + ' resolves to [\'{}\'] {} Family:{} Type:{} Protocol:{} {}'.format(sockaddr[0], txt,\
-                                               families[family], types[socktype], protocols[proto], canonical)
-    
-    
-    def _gethostbyname(self, domain, ipv6=None, txt=None):
-        """Get the canonical hostname of the server, any aliases, and all of the
-           available IP addresses that can be used to reach it.
+    def _getaddrinfo(self, host):
+        """Resolve host and gather available IP addresses and use
+        them to find the geolocation of the host.
         """
 
-        d = urlparse(domain)
+        d = urlparse(host)
         
         if d.scheme:
-            domain = d.netloc
+            host = d.netloc
         
         try:
-            (hostname, _, ipaddrlist) = socket.gethostbyname_ex(domain)
+            result = socket.getaddrinfo(host, None)
         except socket.timeout as err: # Timed out trying to connect.
             return '{}'.format(err)
-        except socket.error as err: # Catch any errors.
+        except socket.gaierror as err:
             return '{}'.format(err)
-        
-        ipv6   = self._getipv6(domain)
-        txt = '[%s]' % ipv6 if ipv6 else ''
 
-        return color.bold(color.teal('DNS: ')) + domain + ' resolves to [{}] {} {}{}'\
-                                      .format(ipaddrlist[0], txt, color.bold(color.teal('LOC (near): ')), self._geoip(ipaddrlist[0]))       
+        ipaddress = result[0][4][0]        
+        geoip = self._geoip(ipaddress)
+        dns = color.bold(color.teal('DNS: '))
+        loc = color.bold(color.teal('LOC: '))
+        
+        return '%s%s resolves to [%s] %s%s' % (dns, host, ipaddress, loc, geoip)               
     
     def _gethostbyaddr(self, ip):
         """Do a reverse lookup for ip.
@@ -151,17 +111,17 @@ class MyDNS(callbacks.Plugin):
             return '{}'.format(err)
         except socket.error as err: # Catch any errors.
             return '{}'.format(err)
-        
-        if not self.is_valid_ip(ip): # Check whether 'ip' consists of alphabetic characters only. Print output accordingly.
-            return color.bold(color.teal('DNS: ')) + hostname + ' resolves to [{}] {}{}'\
-                                      .format(addresses[0], color.bold(color.teal('LOC (near): ')), self._geoip(addresses[0]))
-        else:
-            return color.bold(color.teal('DNS: ')) + addresses[0] + ' resolves to [\'{}\'] {}{}'\
-                                      .format(hostname, color.bold(color.teal('LOC (near): ')), self._geoip(addresses[0]))
-    
-    def _getdomain(self, url):
-        return urlparse(url)[1]
 
+        geoip = self._geoip(addresses[0])
+ 
+        dns = color.bold(color.teal('DNS: '))
+        loc = color.bold(color.teal('LOC: '))
+
+        if not self.is_valid_ip(ip): # Check whether 'ip' consists of alphabetic characters only. Print output accordingly.
+            return '%s%s resolves to [%s] %s%s' % (dns, hostname, addresses[0], loc, geoip)
+        else:
+            return '%s%s resolves to [%s] %s%s' % (dns, addresses[0], hostname, loc, geoip)
+    
     def _getipv6(self, host, port=0):
         """Search only for the wanted IPv6 addresses.
         """
@@ -227,24 +187,21 @@ class MyDNS(callbacks.Plugin):
             response = urlopen(url, timeout = 1).read().decode('utf8')
         except URLError as err:
             if hasattr(err, 'reason'):
-                return 'We failed to reach a server. Reason: {0}'.format(err.reason)
+                return 'We failed to reach a server. Reason: {}'.format(err.reason)
             elif hasattr(err, 'code'):
-                return 'The server couldn\'t fulfill the request: {0}'.format(err.code)
+                return 'The server couldn\'t fulfill the request: {}'.format(err.code)
         data = json.loads(response)
+       
+        _city    = 'City:%s ' % data['city'] if data['city'] else ''
+        _state   = 'State:%s ' % data['region_name'] if data['region_name'] else ''
+        _tmz     = 'TMZ:%s ' % data['time_zone'] if data['time_zone'] else ''
+        _long    = 'Long:%s ' % data['longitude'] if data['longitude'] else ''
+        _lat     = 'Lat:%s ' % data['latitude'] if data['latitude'] else ''
+        _code    = 'Country Code:%s ' % data['country_code'] if data['country_code'] else ''
+        _country = 'Country:%s ' % data['country_name'] if data['country_name'] else ''
+        _zip     = 'Post/Zip Code:%s' % data['zip_code'] if data['zip_code'] else ''
 
-        location_city = data['city']
-        location_state = data['region_name']
-        location_tmz = data['time_zone']
-        location_long = data['longitude']
-        location_lat = data['latitude']
-        location_code = data['country_code']
-        location_country = data['country_name']
-        location_zip = data['zip_code']
-
-        return "City:{0}".format(location_city) + " State:{0}".format(location_state) + \
-                                               " TMZ:{0}".format(location_tmz) + " Long:{0}".format(location_long) + \
-                                               " Lat:{0}".format(location_lat) + " Country Code:{0}".format(location_code) + \
-                                               " Country:{0}".format(location_country) + " Post/Zip Code:{0}".format(location_zip)
+        return ''.join([_city, _state, _tmz, _long, _lat, _code, _country, _zip])
 
 Class = MyDNS
 

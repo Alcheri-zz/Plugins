@@ -47,10 +47,7 @@ except ImportError:
     raise TitlerError('ERROR: I did not find python-magic installed. ' + irc.nick + ' cannot continue.')
 import math # Mathematical functions.
 # Text colour formatting library
-try:
-    from .local import color
-except ImportError:
-    from color import *
+from .local import color
 
 class Titlerz(callbacks.Plugin):
     """Titlerz plugin."""
@@ -90,7 +87,7 @@ class Titlerz(callbacks.Plugin):
     # HTTP HELPER FUNCTIONS #
     #########################
 
-    def open_url(self, url):
+    def _openurl(self, url):
         """Generic http fetcher.
            Links/errors are handled here and passed on.
         """
@@ -292,7 +289,7 @@ class Titlerz(callbacks.Plugin):
                 text = msg.args[1]
             for url in utils.web.urlRe.findall(text):
             # for url in matches:
-                output = self.open_url(url)
+                output = self._openurl(url)
                 # now, with gd, we must check what output is.
                 if output:  # if we did not get None back.
                     if isinstance(output, dict):  # we have a dict.
@@ -314,7 +311,7 @@ class Titlerz(callbacks.Plugin):
 
         channel = msg.args[0]
         # main.
-        output = self.open_url(opturl)
+        output = self._openurl(opturl)
         # now, with gd, we must check what output is.
         if output:  # if we did not get None back.
             if isinstance(output, dict):  # we have a dict.
