@@ -59,28 +59,25 @@ class MyDNS(callbacks.Plugin):
         Returns the ip of <hostname | Nick | URL | ip or IPv6> or the reverse
         DNS hostname of <ip> using Python's socket library.
         """
-        channel = msg.args[0]
-        
+       
         if self.is_valid_ip(address):
                 irc.reply(self._gethostbyaddr(address), prefixNick=False) # Reverse lookup.
         elif self._isnick(address):  # Valid nick?
             nick = address
-            #if not nick.lower() in irc.state.channels[channel].users: # Not in channel.
-            #    irc.error('No such nick.', Raise=True)
             try:
                 userHostmask = irc.state.nickToHostmask(nick)
-                (nick, user, host) = ircutils.splitHostmask(userHostmask) # Split the channel users hostmask.           
+                (nick, user, host) = ircutils.splitHostmask(userHostmask) # Returns the nick, user, host of a user hostmask.           
                 irc.reply(self._gethostbyaddr(host), prefixNick=False) # Reverse lookup.
             except KeyError:
                 irc.error('No such nick.', Raise=True)
-        else:
+        else: # Neither IP or IRC user nick.
             irc.reply(self._getaddrinfo(address), prefixNick=False)
             
     dns = wrap(dns, ['something'])
     
     def _getaddrinfo(self, host):
-        """Resolve host and gather available IP addresses and use
-        them to find the geolocation of the host.
+        """Resolve host and grab available IP address and use
+        it to find the (approximate) geolocation of the host.
         """
 
         d = urlparse(host)
@@ -97,6 +94,7 @@ class MyDNS(callbacks.Plugin):
 
         ipaddress = result[0][4][0]        
         geoip = self._geoip(ipaddress)
+        
         dns = color.bold(color.teal('DNS: '))
         loc = color.bold(color.teal('LOC: '))
         
@@ -112,15 +110,16 @@ class MyDNS(callbacks.Plugin):
         except socket.error as err: # Catch any errors.
             return '{}'.format(err)
 
-        geoip = self._geoip(addresses[0])
+        address = addresses[0]
+        geoip = self._geoip(address)
  
         dns = color.bold(color.teal('DNS: '))
         loc = color.bold(color.teal('LOC: '))
 
         if not self.is_valid_ip(ip): # Check whether 'ip' consists of alphabetic characters only. Print output accordingly.
-            return '%s%s resolves to [%s] %s%s' % (dns, hostname, addresses[0], loc, geoip)
+            return '%s%s resolves to [%s] %s%s' % (dns, hostname, address, loc, geoip)
         else:
-            return '%s%s resolves to [%s] %s%s' % (dns, addresses[0], hostname, loc, geoip)
+            return '%s%s resolves to [%s] %s%s' % (dns, address, hostname, loc, geoip)
     
     def _getipv6(self, host, port=0):
         """Search only for the wanted IPv6 addresses.
