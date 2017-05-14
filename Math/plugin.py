@@ -50,6 +50,7 @@ except ImportError:
 
 baseArg = ('int', 'base', lambda i: i <= 36)
 
+
 class Math(callbacks.Plugin):
     """Provides commands to work with math, such as a calculator and
     a unit converter."""
@@ -103,15 +104,18 @@ class Math(callbacks.Plugin):
     _mathEnv = {'__builtins__': types.ModuleType('__builtins__'), 'i': 1j}
     _mathEnv.update(math.__dict__)
     _mathEnv.update(cmath.__dict__)
+
     def _sqrt(x):
         if isinstance(x, complex) or x < 0:
             return cmath.sqrt(x)
         else:
             return math.sqrt(x)
+
     def _cbrt(x):
         return math.pow(x, 1.0/3)
+
     def _factorial(x):
-        if x<=10000:
+        if x <= 10000:
             return math.factorial(x)
         else:
             raise Exception('factorial argument too large')
@@ -120,8 +124,8 @@ class Math(callbacks.Plugin):
     _mathEnv['abs'] = abs
     _mathEnv['max'] = max
     _mathEnv['min'] = min
-    _mathEnv['round'] = round
-    _mathSafeEnv = dict([(x,y) for x,y in _mathEnv.items()])
+    _mathEnv['round'] = lambda x, y: round(x, int(y))
+    _mathSafeEnv = dict([(x, y) for x, y in _mathEnv.items()])
     _mathSafeEnv['factorial'] = _factorial
     _mathRe = re.compile(r'((?:(?<![A-Fa-f\d)])-)?'
                          r'(?:0x[A-Fa-f\d]+|'
@@ -130,6 +134,7 @@ class Math(callbacks.Plugin):
                          r'\.\d+|'
                          r'\d+\.|'
                          r'\d+))')
+
     def _floatToString(self, x):
         if -1e-10 < x < 1e-10:
             return '0'
@@ -171,6 +176,7 @@ class Math(callbacks.Plugin):
     # Then we delete all square brackets, underscores, and whitespace, so no
     # one can do list comprehensions or call __...__ functions.
     ###
+
     @internationalizeDocstring
     def calc(self, irc, msg, args, text):
         """<math expression>
@@ -185,21 +191,22 @@ class Math(callbacks.Plugin):
             text = str(text)
         except UnicodeEncodeError:
             irc.error(_("There's no reason you should have fancy non-ASCII "
-                            "characters in your mathematical expression. "
-                            "Please remove them."))
+                        "characters in your mathematical expression. "
+                        "Please remove them."))
             return
         if self._calc_match_forbidden_chars.match(text):
             # Note: this is important to keep this to forbid usage of
             # __builtins__
             irc.error(_('There\'s really no reason why you should have '
-                           'underscores or brackets in your mathematical '
-                           'expression.  Please remove them.'))
+                        'underscores or brackets in your mathematical '
+                        'expression.  Please remove them.'))
             return
         text = self._calc_remover(text)
         if 'lambda' in text:
             irc.error(_('You can\'t use lambda in this command.'))
             return
         text = text.lower()
+
         def handleMatch(m):
             s = m.group(1)
             if s.startswith('0x'):
@@ -248,8 +255,8 @@ class Math(callbacks.Plugin):
             # Note: this is important to keep this to forbid usage of
             # __builtins__
             irc.error(_('There\'s really no reason why you should have '
-                           'underscores or brackets in your mathematical '
-                           'expression.  Please remove them.'))
+                        'underscores or brackets in your mathematical '
+                        'expression.  Please remove them.'))
             return
         # This removes spaces, too, but we'll leave the removal of _[] for
         # safety's sake.
@@ -276,6 +283,7 @@ class Math(callbacks.Plugin):
         'dup': lambda s: s.extend([s.pop()]*2),
         'swap': lambda s: s.extend([s.pop(), s.pop()])
         }
+
     def rpn(self, irc, msg, args):
         """<rpn math expression>
 
@@ -288,7 +296,7 @@ class Math(callbacks.Plugin):
                 if x == abs(x):
                     x = abs(x)
                 stack.append(x)
-            except ValueError: # Not a float.
+            except ValueError:  # Not a float.
                 if arg in self._mathSafeEnv:
                     f = self._mathSafeEnv[arg]
                     if callable(f):
@@ -353,7 +361,7 @@ class Math(callbacks.Plugin):
             irc.reply("Converted: {0}".format(str(newNum)) + " " + unit2, prefixNick=False)
         except convertcore.UnitDataError as ude:
             irc.error(str(ude))
-    convert = wrap(convert, [optional('float', 1.0),'something','to','text'])
+    convert = wrap(convert, [optional('float', 1.0), 'something', 'to', 'text'])
 
     @internationalizeDocstring
     def units(self, irc, msg, args, type):
