@@ -6,9 +6,29 @@
 # All rights reserved.
 #
 ###
-from __future__ import (absolute_import, division,
-                        print_function, unicode_literals)
-from builtins import *
+from __future__ import division
+
+# My plugins
+from contextlib import closing  # Utilities for common tasks involving the with statement.
+import re  # Regular expression operators.
+import traceback  # Error traceback
+# For Python 3.0 and later
+from urllib.request import Request, urlopen
+from urllib.parse import urlparse, urlencode
+from urllib.error import URLError
+import os  # Operating system dependent functionality.
+from io import BytesIO  # Images
+import math  # Mathematical functions.
+from bs4 import BeautifulSoup  # Library for pulling data out of HTML and XML files
+import requests  # HTTP library
+
+try:  # first try going from Pillow
+    from PIL import Image
+except ImportError:  # try traditional import of old PIL
+    try:
+        import magic  # python-magic
+    except ImportError:
+        raise Exception('ERROR. I did not find PIL or python-magic installed. I cannot process images w/o this.')
 
 import supybot.conf as conf
 import supybot.utils as utils
@@ -24,28 +44,6 @@ except ImportError:
     # Placeholder that allows to run the plugin on a bot
     # without the i18n module
     _ = lambda x: x
-# My plugins
-from contextlib import closing # Utilities for common tasks involving the with statement.
-import re # Regular expression operators.
-import sys, traceback # Error traceback
-# For Python 3.0 and later
-from urllib.request import Request, urlopen
-from urllib.parse import urlparse, urlencode
-from urllib.error import URLError
-from bs4 import BeautifulSoup # Library for pulling data out of HTML and XML files
-import requests # HTTP library
-import os # Operating system dependent functionality.
-from io import BytesIO # Images
-
-try:
-    from PIL import Image # Pillow
-except ImportError:
-    raise TitlerError('ERROR: I did not find Pillow installed. ' + irc.nick + ' cannot process images.')
-try:
-    import magic # python-magic
-except ImportError:
-    raise TitlerError('ERROR: I did not find python-magic installed. ' + irc.nick + ' cannot continue.')
-import math # Mathematical functions.
 # Text colour formatting library
 from .local import color
 
@@ -121,14 +119,12 @@ class Titlerz(callbacks.Plugin):
             except Exception as err:
                 # Non-fatal error traceback information
                 self.log.info(traceback.format_exc())
-                # or
-                # self.log.info(sys.exc_info()[0])
                 return 'Error: {0}'.format(err)
         else:
             # handle any other filetype using libmagic.
             o = self._filetype(url)
         return o
-    
+
     def _gettitle(self, url, gd=True, o=None):
         """Generic title fetcher for non-domain-specific titles."""
 
@@ -136,7 +132,7 @@ class Titlerz(callbacks.Plugin):
         shorturl = None
         longurl  = None
 
-        self.log.info('_gettitle: Trying to open: {0}'.format(url))
+        # self.log.info('_gettitle: Trying to open: {0}'.format(url))
 
         soup = self._getsoup(url)
         if soup.title is not None:
@@ -186,7 +182,7 @@ class Titlerz(callbacks.Plugin):
 
         cleaned = msg.translate(dict.fromkeys(range(32))).strip()
         return re.sub(r'\s+', ' ', cleaned)
-    
+
     def _cleandesc(self, desc):
         """Tidies up description string."""
 
@@ -198,11 +194,11 @@ class Titlerz(callbacks.Plugin):
         """Convert bytes to megabytes, etc.
            sample code:
                print('mb= ' + str(_bytesto(314575262000000, 'm')))
-           sample output: 
+           sample output:
                mb= 300002347.946
         """
 
-        a = {'k' : 1, 'm': 2, 'g' : 3, 't' : 4, 'p' : 5, 'e' : 6 }
+        a = {'k': 1, 'm': 2, 'g': 3, 't': 4, 'p': 5, 'e': 6}
         r = float(bytes)
         for i in range(a[to]):
             r = r // bsize
@@ -227,15 +223,16 @@ class Titlerz(callbacks.Plugin):
     # Process image data from supplied URL.
     def _getimg(self, url, size):
         """Displays image information in channel"""
-        
-        self.log.info('Trying to open: {0}'.format(url))
+
+        self.log.info('_getimg: Trying to open: %s' % url)
 
         response = requests.get(url, timeout=4)
         response.close()
+
         try:  # try/except because images can be corrupt.
             img = Image.open(BytesIO(response.content))
-        except Exception as err:
-            return 'ERROR: {0} is an invalid image I cannot read :: {1}'.format(url, err)
+        except:
+            return 'ERROR: %s is an invalid image I cannot read.' % url
         width, height = img.size
         if img.format == 'GIF':  # check to see if animated.
             try:
@@ -244,8 +241,8 @@ class Titlerz(callbacks.Plugin):
                 img.format = 'Animated GIF'
             except EOFError:
                 pass
-        return 'Image type: {0}  Dimensions: {1}x{2}  Mode: {3}  Size: {4}Kb'.format(img.format, \
-                width, height, img.mode, str(self._bytesto(size, 'k')))
+
+        return 'Image type: %s  Dimensions: %sx%s  Mode: %s  Size: %sKb' % (img.format, width, height, img.mode, self._bytesto(size, 'k'))
 
     # Expand shortened link
     def _longurl(self, url):
@@ -254,26 +251,26 @@ class Titlerz(callbacks.Plugin):
         resp = session.head(url, allow_redirects=True)
         return resp.url
 
-    # Open the webpage for parsing
     def _getsoup(self, url):
-       """Get web page."""
-       req = Request(url)
-       # Set language for page
-       req.add_header('Accept-Language', 'en-us,en;q=0.5')
-       response = urlopen(req, timeout=4)
-       page = response.read()
-       # Close open file
-       response.close()
-       soup = BeautifulSoup(page, 'lxml')
-       return soup
+        """Get web page."""
+        req = Request(url)
+        # Set language for page
+        req.add_header('Accept-Language', 'en-us,en;q=0.5')
+        response = urlopen(req, timeout=4)
+        page = response.read()
+        # Close open file
+        response.close()
+        soup = BeautifulSoup(page, 'lxml')
+        return soup
 
     ############################################
     # MAIN TRIGGER FOR URLS PASTED IN CHANNELS #
     ############################################
-    
+
     def doPrivmsg(self, irc, msg):
         """Monitor channel for URLs"""
-        channel = msg.args[0]  # channel, if any.
+
+        channel=msg.args[0]  # channel, if any.
 
         # Check if we should be 'disabled' in this channel.
         # config channel #channel plugins.titlerz.enable True or False (or On or Off)
@@ -288,7 +285,6 @@ class Titlerz(callbacks.Plugin):
             else:
                 text = msg.args[1]
             for url in utils.web.urlRe.findall(text):
-            # for url in matches:
                 output = self._openurl(url)
                 # now, with gd, we must check what output is.
                 if output:  # if we did not get None back.
@@ -309,7 +305,6 @@ class Titlerz(callbacks.Plugin):
         Ex: http://www.google.com
         """
 
-        channel = msg.args[0]
         # main.
         output = self._openurl(opturl)
         # now, with gd, we must check what output is.
@@ -323,9 +318,6 @@ class Titlerz(callbacks.Plugin):
                 irc.reply('{0}'.format(output))
 
     titler = wrap(titler, [('text')])
-
-class TitlerError(Exception):
-    pass
 
 Class = Titlerz
 

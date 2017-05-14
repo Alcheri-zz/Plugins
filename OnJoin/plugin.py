@@ -4,10 +4,12 @@
 #
 # Python 3
 ###
-from __future__ import (absolute_import, division,
-                        print_function, unicode_literals)
 from future.utils import raise_from
-from builtins import *
+
+import random
+from pathlib import Path
+# Text formatting library
+from .local import color
 
 import supybot.utils as utils
 from supybot.commands import *
@@ -21,13 +23,6 @@ except ImportError:
     # Placeholder that allows to run the plugin on a bot
     # without the i18n module
     _ = lambda x: x
-import random
-from pathlib import Path
-# Text formatting library
-try:
-    from .local import color
-except ImportError:
-    from color import *
 
 class OnJoin(callbacks.Plugin):
     """Send a notice to all users entering a channel."""
@@ -36,9 +31,6 @@ class OnJoin(callbacks.Plugin):
 
     def __init__(self, irc):
         self.__parent = super().__init__(irc)
-
-    def die(self):
-        self.__parent.die()
 
     def doJoin(self, irc, msg):
         channel = msg.args[0]
@@ -53,13 +45,14 @@ class OnJoin(callbacks.Plugin):
                 with open(fp) as f:
                     while 1:
                         line = f.readline()
-                        if not line: break
+                        if not line:
+                            break
                         line_num += 1
                         if random.uniform(0, line_num) < 1:
                             selected_line = line
                 # It's not the bot.
                 if ircutils.strEqual(irc.nick, msg.nick) is False:
-                    irc.reply(color.teal(selected_line.strip()) , notice=True, private=True, to=msg.nick)
+                    irc.reply(color.teal(selected_line.strip()), notice=True, private=True, to=msg.nick)
                 else:
                     return None
             except IOError as err:
@@ -69,6 +62,7 @@ class OnJoin(callbacks.Plugin):
             return None
 
 class DatabaseError(Exception):
+    """Handle all IO errors."""
     pass
 
 Class = OnJoin
