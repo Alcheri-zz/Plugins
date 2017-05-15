@@ -22,14 +22,6 @@ import math  # Mathematical functions.
 from bs4 import BeautifulSoup  # Library for pulling data out of HTML and XML files
 import requests  # HTTP library
 
-try:  # first try going from Pillow
-    from PIL import Image
-except ImportError:  # try traditional import of old PIL
-    try:
-        import magic  # python-magic
-    except ImportError:
-        raise Exception('ERROR. I did not find PIL or python-magic installed. I cannot process images w/o this.')
-
 import supybot.conf as conf
 import supybot.utils as utils
 from supybot.commands import *
@@ -47,6 +39,72 @@ except ImportError:
 
 # Text colour formatting library
 from .local import color
+
+def _import_error(exception):
+    """Import error."""
+    raise MyException('ERROR. I did not find PIL/Magic installed. I cannot process images w/o this. [%s]', exception)
+
+#  Python 3
+try:
+    from PIL import Image  # Pillow
+except ImportError as err:
+    _import_error(err)
+
+try:
+    import magic  # Magic
+except ImportError as err:
+    _import_error(err)
+
+    ###############
+    #  UTILITIES  #
+    ###############
+
+def _cleantitle(msg):
+    """Clean up the title of a URL."""
+
+    cleaned = msg.translate(dict.fromkeys(range(32))).strip()
+    return re.sub(r'\s+', ' ', cleaned)
+
+def _cleandesc(desc):
+    """Tidies up description string."""
+
+    desc = desc.replace('\n', '').replace('\r', '')
+    return desc
+
+# Function to convert bytes to Kb, Mb %c
+def _bytesto(bytes, to, bsize=1024):
+    """Convert bytes to megabytes, etc.
+        sample code:
+            print('mb= ' + str(_bytesto(314575262000000, 'm')))
+        sample output:
+            mb= 300002347.946
+    """
+
+    a = {'k': 1, 'm': 2, 'g': 3, 't': 4, 'p': 5, 'e': 6}
+    r = float(bytes)
+    for i in range(a[to]):
+        r = r // bsize
+
+    return math.ceil(float(r))
+
+# Expand shortened link
+def _longurl(url):
+    """Expand shortened URLs."""
+    session = requests.Session()  # so connections are recycled
+    resp = session.head(url, allow_redirects=True)
+    return resp.url
+
+def _getsoup(url):
+    """Get web page."""
+    req = Request(url)
+    # Set language for page
+    req.add_header('Accept-Language', 'en-us,en;q=0.5')
+    response = urlopen(req, timeout=4)
+    page = response.read()
+    # Close open file
+    response.close()
+    soup = BeautifulSoup(page, 'lxml')
+    return soup
 
 class Titlerz(callbacks.Plugin):
     """Titlerz plugin."""
@@ -133,15 +191,15 @@ class Titlerz(callbacks.Plugin):
         shorturl = None
         longurl  = None
 
-        self.log.info("_gettitle: Trying to open: {}".format(url))
+        self.log.info('_gettitle: Trying to open: %s', url)
 
-        soup = self._getsoup(url)
+        soup = _getsoup(url)
         if soup.title is not None:
-            title = self._cleantitle(soup.title.string)
+            title = _cleantitle(soup.title.string)
         else:
             title = None
         # List of domains to not allow displaying of web page descriptions.
-        baddomains = ['twitter.com', 'panoramio.com', 'facebook.com', 'kickass.to', 'dailymotion.com', \
+        baddomains = ['twitter.com', 'panoramio.com', 'facebook.com', 'kickass.to', 'dailymotion.com',
                       'tinypic.com', 'ebay.com', 'imgur.com', 'dropbox.com']
         urlhostname = urlparse(url).hostname
         if __builtins__['any'](b in urlhostname for b in baddomains):
@@ -151,10 +209,10 @@ class Titlerz(callbacks.Plugin):
             # Yes!
             des = soup.find('meta', attrs={'name': lambda x: x and x.lower() == 'description'})
             if des and des.get('content'):
-                desc = self._cleandesc(des['content'].strip())
+                desc = _cleandesc(des['content'].strip())
         if title:
             if __builtins__['any'](s in urlhostname for s in self.shortUrlServices):
-                longurl = self._longurl(url)
+                longurl = _longurl(url)
             else:
                 request_url = ('http://tinyurl.com/api-create.php?' + urlencode({'url':url}))
                 with closing(urlopen(request_url)) as response:
@@ -164,47 +222,7 @@ class Titlerz(callbacks.Plugin):
             o = None
         if desc:
             return {'title': o, 'desc': desc}
-        return o 
-
-    ###############
-    #  UTILITIES  #
-    ###############
-
-    def any(self, iterable):
-        """Return True if any element of the iterable is true.
-        If the iterable is empty, return False. """
-        for element in iterable:
-            if element:
-                return True
-        return False
-
-    def _cleantitle(self, msg):
-        """Clean up the title of a URL."""
-
-        cleaned = msg.translate(dict.fromkeys(range(32))).strip()
-        return re.sub(r'\s+', ' ', cleaned)
-
-    def _cleandesc(self, desc):
-        """Tidies up description string."""
-
-        desc = desc.replace('\n', '').replace('\r', '')
-        return desc
-
-    # Function to convert bytes to Kb, Mb %c
-    def _bytesto(self, bytes, to, bsize=1024):
-        """Convert bytes to megabytes, etc.
-           sample code:
-               print('mb= ' + str(_bytesto(314575262000000, 'm')))
-           sample output:
-               mb= 300002347.946
-        """
-
-        a = {'k': 1, 'm': 2, 'g': 3, 't': 4, 'p': 5, 'e': 6}
-        r = float(bytes)
-        for i in range(a[to]):
-            r = r // bsize
-
-        return math.ceil(float(r))
+        return o
 
     # Check for other filetypes using libmagic
     def _filetype(self, url):
@@ -215,17 +233,17 @@ class Titlerz(callbacks.Plugin):
         try:
             size = len(response.content)
             typeoffile = magic.from_buffer(response.content)
-            return 'Content type: %s - Size: %s' % (typeoffile, self._bytesto(size, 'k'))
+            return 'Content type: %s - Size: %s' % (typeoffile, str(_bytesto(size, 'k')))
         except Exception as err:  # give a detailed error here in the logs.
-            self.log.error("ERROR: _filetype: error trying to parse {} via other (else) :: {}".format(url, err))
-            self.log.error("ERROR: _filetype: no handler for {} at {}".format(response.headers['content-type'], url))
+            self.log.error('Error: _filetype: error trying to parse %s via other (else) :: %s', url, err)
+            self.log.error('ERROR: _filetype: no handler for %s at %s', response.headers['content-type'], url)
             return None
 
     # Process image data from supplied URL.
     def _getimg(self, url, size):
         """Displays image information in channel"""
 
-        self.log.info("_getimg: Trying to open: {}".format(url))
+        self.log.info('_getimg: Trying to open: %s', url)
 
         response = requests.get(url, timeout=4)
         response.close()
@@ -243,26 +261,8 @@ class Titlerz(callbacks.Plugin):
             except EOFError:
                 pass
 
-        return 'Image type: %s  Dimensions: %sx%s  Mode: %s  Size: %sKb' % (img.format, width, height, img.mode, self._bytesto(size, 'k'))
-
-    # Expand shortened link
-    def _longurl(self, url):
-        """Expand shortened URLs."""
-        session = requests.Session()  # so connections are recycled
-        resp = session.head(url, allow_redirects=True)
-        return resp.url
-
-    def _getsoup(self, url):
-        """Get web page."""
-        req = Request(url)
-        # Set language for page
-        req.add_header('Accept-Language', 'en-us,en;q=0.5')
-        response = urlopen(req, timeout=4)
-        page = response.read()
-        # Close open file
-        response.close()
-        soup = BeautifulSoup(page, 'lxml')
-        return soup
+        return 'Image type: %s  Dimensions: %sx%s  Mode: %s  Size: %sKb' % \
+                    (img.format, width, height, img.mode, str(_bytesto(size, 'k')))
 
     ############################################
     # MAIN TRIGGER FOR URLS PASTED IN CHANNELS #
@@ -271,7 +271,7 @@ class Titlerz(callbacks.Plugin):
     def doPrivmsg(self, irc, msg):
         """Monitor channel for URLs"""
 
-        channel=msg.args[0]  # channel, if any.
+        channel = msg.args[0]  # channel, if any.
 
         # Check if we should be 'disabled' in this channel.
         # config channel #channel plugins.titlerz.enable True or False (or On or Off)
@@ -322,5 +322,8 @@ class Titlerz(callbacks.Plugin):
 
 Class = Titlerz
 
+class MyException(Exception):
+    """Handle all IO errors."""
+    pass
 
 # vim:set shiftwidth=4 softtabstop=4 expandtab textwidth=79:
