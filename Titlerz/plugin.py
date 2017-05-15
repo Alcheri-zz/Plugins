@@ -9,10 +9,10 @@
 from __future__ import division
 
 # My plugins
-from contextlib import closing  # Utilities for common tasks involving the with statement.
 import re  # Regular expression operators.
 import traceback  # Error traceback
 # For Python 3.0 and later
+from contextlib import closing  # Utilities for common tasks involving the with statement.
 from urllib.request import Request, urlopen
 from urllib.parse import urlparse, urlencode
 from urllib.error import URLError
@@ -95,7 +95,7 @@ class Titlerz(callbacks.Plugin):
         if __builtins__['any'](url.endswith(x) for x in badexts):
             path = urlparse(url).path
             ext = os.path.splitext(path)[1]
-            return "ERROR. Bad extension \'{0}\'".format(ext)
+            return "ERROR. Bad extension '%s'" % ext
 
         # Requests: HTTP for Humans
         req = Request(url)
@@ -132,7 +132,7 @@ class Titlerz(callbacks.Plugin):
         shorturl = None
         longurl  = None
 
-        # self.log.info('_gettitle: Trying to open: {0}'.format(url))
+        self.log.info("_gettitle: Trying to open: {}".format(url))
 
         soup = self._getsoup(url)
         if soup.title is not None:
@@ -148,7 +148,7 @@ class Titlerz(callbacks.Plugin):
         # Should we "get description" (GD)?
         if gd:
             # Yes!
-            des = soup.find('meta', attrs={'name': lambda x: x and x.lower()=='description'})
+            des = soup.find('meta', attrs={'name': lambda x: x and x.lower() == 'description'})
             if des and des.get('content'):
                 desc = self._cleandesc(des['content'].strip())
         if title:
@@ -214,17 +214,17 @@ class Titlerz(callbacks.Plugin):
         try:
             size = len(response.content)
             typeoffile = magic.from_buffer(response.content)
-            return 'Content type: {0} - Size: {1}'.format(typeoffile, str(self._bytesto(size, 'k')))
+            return 'Content type: %s - Size: %s' % (typeoffile, self._bytesto(size, 'k'))
         except Exception as err:  # give a detailed error here in the logs.
-            self.log.error('ERROR: error trying to parse {0} via other (else) :: {1}'.format(url, err))
-            self.log.error('ERROR: no handler for {0} at {1}'.format(response.headers['content-type'], url))
+            self.log.error("ERROR: _filetype: error trying to parse {} via other (else) :: {}".format(url, err))
+            self.log.error("ERROR: _filetype: no handler for {} at {}".format(response.headers['content-type'], url))
             return None
 
     # Process image data from supplied URL.
     def _getimg(self, url, size):
         """Displays image information in channel"""
 
-        self.log.info('_getimg: Trying to open: %s' % url)
+        self.log.info("_getimg: Trying to open: {}".format(url))
 
         response = requests.get(url, timeout=4)
         response.close()
