@@ -62,11 +62,11 @@ class OnJoin(callbacks.Plugin):
                     return None
             except IOError as err:
                 # Non-fatal error traceback information
-                raise_from(DatabaseError('failed to open'), err)
+                raise_from(FileError('failed to open'), err)
         else:
             return None
 
-class DatabaseError(Exception):
+class FileError(Exception):
     """Handle all IO errors."""
     pass
 
