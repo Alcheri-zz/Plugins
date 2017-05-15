@@ -34,7 +34,7 @@ class OnJoin(callbacks.Plugin):
 
     def doJoin(self, irc, msg):
         """Send a random notice to a user
-        when they entewr the channel."""
+        when they enter the channel."""
 
         channel = msg.args[0]
 
