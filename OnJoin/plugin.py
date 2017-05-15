@@ -7,7 +7,8 @@
 from future.utils import raise_from
 
 import random
-from pathlib import Path
+# from pathlib import Path
+import os.path
 # Text formatting library
 from .local import color
 
@@ -33,11 +34,16 @@ class OnJoin(callbacks.Plugin):
         self.__parent = super().__init__(irc)
 
     def doJoin(self, irc, msg):
+        """Send a random notice to a user
+        when they entewr the channel."""
+
         channel = msg.args[0]
+
         # Check if in a channel and see if we should be 'disabled' in it.
         # config channel #channel plugins.onjoin.enable True or False (or On or Off)
         if ircutils.isChannel(channel) and self.registryValue('enable', channel):
-            p = Path('plugins/OnJoin/quotes.txt').resolve()
+            p = os.path.abspath(os.path.dirname(__file__))
+            p = p + '/quotes.txt'
             fp = str(p)
             line_num = 0
             selected_line = ''
