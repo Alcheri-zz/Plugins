@@ -44,6 +44,7 @@ except ImportError:
     # Placeholder that allows to run the plugin on a bot
     # without the i18n module
     _ = lambda x: x
+
 # Text colour formatting library
 from .local import color
 

@@ -13,8 +13,6 @@ import socket  # Low-level networking interface
 from urllib.parse import urlparse
 from urllib.request import urlopen
 from urllib.error import URLError
-# Text colour formatting library
-from .local import color
 
 import supybot.utils as utils
 from supybot.commands import *
@@ -28,14 +26,9 @@ except ImportError:
     # Placeholder that allows to run the plugin on a bot
     # without the i18n module
     _ = lambda x:x
-    
-try:
-    from supybot.i18n import PluginInternationalization, internationalizeDocstring
-    _ = PluginInternationalization('MyDNS')
-except ImportError:
-    # Placeholder that allows to run the plugin on a bot
-    # without the i18n module
-    _ = lambda x: x
+
+# Text colour formatting library
+from .local import color
 
 class MyDNS(callbacks.Plugin):
     """An alternative to Supybot's DNS function.
