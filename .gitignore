@@ -8,4 +8,5 @@ test-logs
 *.swo
 *~
 *.mo
+*.komodoproject
 README.txt

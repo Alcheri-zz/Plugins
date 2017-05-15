@@ -56,7 +56,6 @@ class Math(callbacks.Plugin):
     @internationalizeDocstring
     def base(self, irc, msg, args, frm, to, number):
         """<fromBase> [<toBase>] <number>
-
         Converts <number> from base <fromBase> to base <toBase>.
         If <toBase> is left out, it converts to decimal.
         """
@@ -174,7 +173,6 @@ class Math(callbacks.Plugin):
     @internationalizeDocstring
     def calc(self, irc, msg, args, text):
         """<math expression>
-
         Returns the value of the evaluated <math expression>.  The syntax is
         Python syntax; the type of arithmetic is floating point.  Floating
         point arithmetic is used in order to prevent a user from being able to
@@ -239,7 +237,6 @@ class Math(callbacks.Plugin):
     @internationalizeDocstring
     def icalc(self, irc, msg, args, text):
         """<math expression>
-
         This is the same as the calc command except that it allows integer
         math, and can thus cause the bot to suck up CPU.  Hence it requires
         the 'trusted' capability to use.
@@ -278,7 +275,6 @@ class Math(callbacks.Plugin):
         }
     def rpn(self, irc, msg, args):
         """<rpn math expression>
-
         Returns the value of an RPN expression.
         """
         stack = []
@@ -327,7 +323,6 @@ class Math(callbacks.Plugin):
     @internationalizeDocstring
     def convert(self, irc, msg, args, number, unit1, unit2):
         """[<number>] <unit> to <other unit>
-
         Converts from <unit> to <other unit>. If number isn't given, it
         defaults to 1. For unit information, see 'units' command.
         """
@@ -357,7 +352,6 @@ class Math(callbacks.Plugin):
     @internationalizeDocstring
     def units(self, irc, msg, args, type):
         """ [<type>]
-
         With no arguments, returns a list of measurement types, which can be
         passed as arguments. When called with a type as an argument, returns
         the units of that type.
