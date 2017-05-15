@@ -7,7 +7,6 @@
 from future.utils import raise_from
 
 import random
-# from pathlib import Path
 import os.path
 # Text formatting library
 from .local import color
