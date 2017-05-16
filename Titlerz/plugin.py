@@ -22,11 +22,8 @@ import math  # Mathematical functions.
 from bs4 import BeautifulSoup  # Library for pulling data out of HTML and XML files
 import requests  # HTTP library
 
-import supybot.conf as conf
 import supybot.utils as utils
 from supybot.commands import *
-import supybot.plugins as plugins
-# import supybot.ircutils as ircutils
 import supybot.ircmsgs as ircmsgs
 import supybot.callbacks as callbacks
 try:
@@ -39,21 +36,16 @@ except ImportError:
 
 # Text colour formatting library
 from .local import color
-
-def _import_error(exception):
-    """Import error."""
-    raise MyException('ERROR. I did not find PIL/Magic installed. I cannot process images w/o this. [%s]', exception)
-
 #  Python 3
 try:
     from PIL import Image  # Pillow
 except ImportError as err:
-    _import_error(err)
+    raise Exception('ERROR. I did not find PIL installed. I cannot process images w/o this. [%s]', err)
 
 try:
     import magic  # Magic
 except ImportError as err:
-    _import_error(err)
+    raise Exception('ERROR. I did not find Magic installed. I cannot process images w/o this. [%s]', err)
 
     ###############
     #  UTILITIES  #
@@ -163,9 +155,9 @@ class Titlerz(callbacks.Plugin):
             res = urlopen(req, timeout=4)
         except URLError as err:
             if hasattr(err, 'reason'):
-                return 'We failed to reach a server. Reason: {0}'.format(err.reason)
+                return 'We failed to reach a server. Reason: %s' % err.reason
             elif hasattr(err, 'code'):
-                return 'The server couldn\'t fulfill the request: {0}'.format(err.code)
+                return 'The server couldn\'t fulfill the request: %s' % err.code
         response = res.info()
         res.close()
         if response['content-type'].startswith('audio/') or response['content-type'].startswith('video/'):
@@ -178,7 +170,7 @@ class Titlerz(callbacks.Plugin):
             except Exception as err:
                 # Non-fatal error traceback information
                 self.log.info(traceback.format_exc())
-                return 'Error: {0}'.format(err)
+                return 'Error: %s' % err
         else:
             # handle any other filetype using libmagic.
             o = self._filetype(url)
@@ -214,10 +206,10 @@ class Titlerz(callbacks.Plugin):
             if __builtins__['any'](s in urlhostname for s in self.shortUrlServices):
                 longurl = _longurl(url)
             else:
-                request_url = ('http://tinyurl.com/api-create.php?' + urlencode({'url':url}))
+                request_url = ('http://tinyurl.com/api-create.php?' + urlencode({'url': url}))
                 with closing(urlopen(request_url)) as response:
                     shorturl = response.read().decode('utf-8')
-            o = "{0} - ({1})".format(title, longurl if not shorturl else shorturl)
+            o = "%s - (%s)" % (title, longurl if not shorturl else shorturl)
         else:
             o = None
         if desc:
@@ -321,9 +313,5 @@ class Titlerz(callbacks.Plugin):
     titler = wrap(titler, [('text')])
 
 Class = Titlerz
-
-class MyException(Exception):
-    """Handle all IO errors."""
-    pass
 
 # vim:set shiftwidth=4 softtabstop=4 expandtab textwidth=79:

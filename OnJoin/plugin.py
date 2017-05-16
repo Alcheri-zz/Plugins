@@ -9,9 +9,6 @@ from future.utils import raise_from
 import random
 import os.path
 
-import supybot.utils as utils
-from supybot.commands import *
-import supybot.plugins as plugins
 import supybot.ircutils as ircutils
 import supybot.callbacks as callbacks
 try:
