@@ -98,6 +98,10 @@ def _getsoup(url):
     soup = BeautifulSoup(page, 'lxml')
     return soup
 
+    ##############
+    #    MAIN    #
+    ##############
+
 class Titlerz(callbacks.Plugin):
     """Titlerz plugin."""
 
@@ -242,8 +246,10 @@ class Titlerz(callbacks.Plugin):
 
         try:  # try/except because images can be corrupt.
             img = Image.open(BytesIO(response.content))
-        except:
-            return 'ERROR: %s is an invalid image I cannot read.' % url
+            img.verify()  # verify that it is, in fact an image
+            img = Image.open(BytesIO(response.content))
+        except (IOError, SyntaxError) as err:
+            return 'ERROR: %s is an invalid image I cannot read. [%s]' % (url, err)
         width, height = img.size
         if img.format == 'GIF':  # check to see if animated.
             try:
@@ -308,7 +314,7 @@ class Titlerz(callbacks.Plugin):
                     if 'desc' in output:
                         irc.reply(color.bold('GD: ') + output['desc'])
             else:
-                irc.reply('{0}'.format(output))
+                irc.reply('%s' % output)
 
     titler = wrap(titler, [('text')])
 

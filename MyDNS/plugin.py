@@ -14,6 +14,7 @@ from urllib.parse import urlparse
 from urllib.request import urlopen
 from urllib.error import URLError
 
+from supybot.commands import *
 import supybot.ircutils as ircutils
 import supybot.callbacks as callbacks
 try:
@@ -26,6 +27,69 @@ except ImportError:
 
 # Text colour formatting library
 from .local import color
+
+    ###############
+    #  UTILITIES  #
+    ###############
+
+def is_valid_ip(ipaddress):
+    """Validates IP addresses.
+    """
+    return is_valid_ipv4(ipaddress) or is_valid_ipv6(ipaddress)
+
+def is_valid_ipv4(address):
+    """Validates IPv4 addresses.
+    """
+    try:
+        socket.inet_pton(socket.AF_INET, address)
+    except AttributeError:  # No inet_pton here, sorry.
+        try:
+            socket.inet_aton(address)
+        except socket.error:
+            return False
+        return address.count('.') == 3
+    except socket.error:  # Not a valid address.
+        return False
+    return True
+
+def is_valid_ipv6(address):
+    """Validates IPv6 addresses.
+    """
+    try:
+        socket.inet_pton(socket.AF_INET6, address)
+    except socket.error:  # Not a valid address.
+        return False
+    return True
+
+def _geoip(ipaddress, response=None, data=None):
+    """Search for the geolocation of IP addresses.
+    Accuracy not guaranteed.
+    """
+    url = 'http://freegeoip.net/json/' + ipaddress
+
+    try:
+        response = urlopen(url, timeout=1).read().decode('utf8')
+    except URLError as err:
+        if hasattr(err, 'reason'):
+            return 'We failed to reach a server. Reason: %s' % err.reason
+        elif hasattr(err, 'code'):
+            return 'The server couldn\'t fulfill the request: %s' % err.code
+    data = json.loads(response)
+
+    _city    = 'City:%s ' % data['city'] if data['city'] else ''
+    _state   = 'State:%s ' % data['region_name'] if data['region_name'] else ''
+    _tmz     = 'TMZ:%s ' % data['time_zone'] if data['time_zone'] else ''
+    _long    = 'Long:%s ' % data['longitude'] if data['longitude'] else ''
+    _lat     = 'Lat:%s ' % data['latitude'] if data['latitude'] else ''
+    _code    = 'Country Code:%s ' % data['country_code'] if data['country_code'] else ''
+    _country = 'Country:%s ' % data['country_name'] if data['country_name'] else ''
+    _zip     = 'Post/Zip Code:%s' % data['zip_code'] if data['zip_code'] else ''
+
+    return ''.join([_city, _state, _tmz, _long, _lat, _code, _country, _zip])
+
+    ##############
+    #    MAIN    #
+    ##############
 
 class MyDNS(callbacks.Plugin):
     """An alternative to Supybot's DNS function.
@@ -53,7 +117,7 @@ class MyDNS(callbacks.Plugin):
         Returns the ip of <hostname | Nick | URL | ip or IPv6> or the reverse
         DNS hostname of <ip> using Python's socket library.
         """
-        if self.is_valid_ip(address):
+        if is_valid_ip(address):
             irc.reply(self._gethostbyaddr(address), prefixNick=False)
         elif self._isnick(address):  # Valid nick?
             nick = address
@@ -80,12 +144,12 @@ class MyDNS(callbacks.Plugin):
         try:
             result = socket.getaddrinfo(host, None)
         except socket.timeout as err:  # Timed out trying to connect
-            return '{}'.format(err)
+            return '%s' % err
         except socket.gaierror as err:
-            return '{}'.format(err)
+            return '%s' % err
 
         ipaddress = result[0][4][0]
-        geoip = self._geoip(ipaddress)
+        geoip = _geoip(ipaddress)
 
         dns = color.bold(color.teal('DNS: '))
         loc = color.bold(color.teal('LOC: '))
@@ -98,13 +162,13 @@ class MyDNS(callbacks.Plugin):
         try:
             (hostname, _, addresses) = socket.gethostbyaddr(ip)
         except socket.timeout as err:  # Name/service not known or failure in name resolution
-            return '{}'.format(err)
+            return '%s' % err
         except socket.error as err:  # Catch any errors.
-            return '{}'.format(err)
+            return '%s' % err
 
         address = addresses[0]
-        geoip = self._geoip(address)
-        vip = self.is_valid_ip(ip)
+        geoip = _geoip(address)
+        vip = is_valid_ip(ip)
 
         dns = color.bold(color.teal('DNS: '))
         loc = color.bold(color.teal('LOC: '))
@@ -114,45 +178,6 @@ class MyDNS(callbacks.Plugin):
             return '%s%s resolves to [%s] %s%s' % (dns, hostname, address, loc, geoip)
 
         return '%s%s resolves to [%s] %s%s' % (dns, address, hostname, loc, geoip)
-
-    def _getipv6(self, host, port=0):
-        """Search only for the wanted IPv6 addresses.
-        """
-        try:
-            result = socket.getaddrinfo(host, port, socket.AF_INET6)
-        except Exception as err:
-            return None
-        # return result # or:
-        return result[0][4][0]  # Just returns the first answer and only the address.
-
-    def is_valid_ip(self, ip):
-        """Validates IP addresses.
-        """
-        return self.is_valid_ipv4(ip) or self.is_valid_ipv6(ip)
-
-    def is_valid_ipv4(self, address):
-        """Validates IPv4 addresses.
-        """
-        try:
-            socket.inet_pton(socket.AF_INET, address)
-        except AttributeError:  # No inet_pton here, sorry.
-            try:
-                socket.inet_aton(address)
-            except socket.error:
-                return False
-            return address.count('.') == 3
-        except socket.error:  # Not a valid address.
-            return False
-        return True
-
-    def is_valid_ipv6(self, address):
-        """Validates IPv6 addresses.
-        """
-        try:
-            socket.inet_pton(socket.AF_INET6, address)
-        except socket.error:  # Not a valid address.
-            return False
-        return True
 
     def _isnick(self, nick):
         """ Checks to see if a nickname `nick` is valid.
@@ -167,32 +192,6 @@ class MyDNS(callbacks.Plugin):
             if not char.isalnum() and char not in self._special_chars:
                 return False
         return True
-
-    def _geoip(self, ip, response=None, data=None):
-        """Search for the geolocation of IP addresses.
-        Accuracy not guaranteed.
-        """
-        url = 'http://freegeoip.net/json/' + ip
-
-        try:
-            response = urlopen(url, timeout=1).read().decode('utf8')
-        except URLError as err:
-            if hasattr(err, 'reason'):
-                return 'We failed to reach a server. Reason: {}'.format(err.reason)
-            elif hasattr(err, 'code'):
-                return 'The server couldn\'t fulfill the request: {}'.format(err.code)
-        data = json.loads(response)
-
-        _city    = 'City:%s ' % data['city'] if data['city'] else ''
-        _state   = 'State:%s ' % data['region_name'] if data['region_name'] else ''
-        _tmz     = 'TMZ:%s ' % data['time_zone'] if data['time_zone'] else ''
-        _long    = 'Long:%s ' % data['longitude'] if data['longitude'] else ''
-        _lat     = 'Lat:%s ' % data['latitude'] if data['latitude'] else ''
-        _code    = 'Country Code:%s ' % data['country_code'] if data['country_code'] else ''
-        _country = 'Country:%s ' % data['country_name'] if data['country_name'] else ''
-        _zip     = 'Post/Zip Code:%s' % data['zip_code'] if data['zip_code'] else ''
-
-        return ''.join([_city, _state, _tmz, _long, _lat, _code, _country, _zip])
 
 Class = MyDNS
 
