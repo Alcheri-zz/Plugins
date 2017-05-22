@@ -1,5 +1,5 @@
 beautifulsoup4
 python-lxml
 future
-Pillow
+pillow
 python-magic
