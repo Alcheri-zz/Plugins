@@ -1,4 +1,8 @@
-###
+# pylint: disable=missing-docstring
+# pylint: disable=unused-argument
+# pylint: disable=invalid-name
+
+##
 # Copyright (c) 2016, Barry Suridge
 # All rights reserved.
 #
@@ -22,7 +26,7 @@ except ImportError:
 # Text formatting library
 from .local import color
 
-class OnJoin(callbacks.Plugin):
+class OnJoin(callbacks.Plugin):  # pylint: disable=too-many-ancestors
     """Send a notice to all users entering a channel."""
 
     public = False
@@ -65,7 +69,7 @@ class OnJoin(callbacks.Plugin):
             return None
 
 class FileError(Exception):
-    """Handle all IO errors."""
+    """Non-fatal error traceback."""
     pass
 
 Class = OnJoin

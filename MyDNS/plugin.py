@@ -1,11 +1,14 @@
-###
-# coding: utf-8
+# pylint: disable=missing-docstring
+# pylint: disable=unused-argument
+# pylint: disable=invalid-name
+
 ##
 # Copyright (c) 2016 - 2017, Barry Suridge
 # All rights reserved.
 #
 #
 ###
+
 # My plugins
 import json    # JavaScript Object Notation
 import socket  # Low-level networking interface
@@ -29,8 +32,55 @@ except ImportError:
 from .local import color
 
     ###############
-    #  UTILITIES  #
+    #  FUNCTIONS  #
     ###############
+
+def _getaddrinfo(host):
+    """Get host information. Use returned IP address
+    to find the (approximate) geolocation of the host.
+    """
+    d = urlparse(host)
+
+    if d.scheme:
+        host = d.netloc
+
+    try:
+        result = socket.getaddrinfo(host, None)
+    except socket.timeout as err:  # Timed out trying to connect
+        return '%s' % err
+    except socket.gaierror as err:
+        return '%s' % err
+
+    ipaddress = result[0][4][0]
+    geoip = _geoip(ipaddress)
+
+    dns = color.bold(color.teal('DNS: '))
+    loc = color.bold(color.teal('LOC: '))
+
+    return '%s%s resolves to [%s] %s%s' % (dns, host, ipaddress, loc, geoip)
+
+def _gethostbyaddr(ip):
+    """Do a reverse lookup for ip.
+    """
+    try:
+        (hostname, _, addresses) = socket.gethostbyaddr(ip)
+    except socket.timeout as err:  # Name/service not known or failure in name resolution
+        return '%s' % err
+    except socket.error as err:  # Catch any errors.
+        return '%s' % err
+
+    address = addresses[0]
+    geoip = _geoip(address)
+    vip = is_valid_ip(ip)
+
+    dns = color.bold(color.teal('DNS: '))
+    loc = color.bold(color.teal('LOC: '))
+
+    # Check whether 'ip' consists of alphabetic characters - VHost. Print output accordingly.
+    if not vip:
+        return '%s%s resolves to [%s] %s%s' % (dns, hostname, address, loc, geoip)
+
+    return '%s%s resolves to [%s] %s%s' % (dns, address, hostname, loc, geoip)
 
 def is_valid_ip(ipaddress):
     """Validates IP addresses.
@@ -91,7 +141,7 @@ def _geoip(ipaddress, response=None, data=None):
     #    MAIN    #
     ##############
 
-class MyDNS(callbacks.Plugin):
+class MyDNS(callbacks.Plugin):  # pylint: disable=too-many-ancestors
     """An alternative to Supybot's DNS function.
     """
 
@@ -118,66 +168,19 @@ class MyDNS(callbacks.Plugin):
         DNS hostname of <ip> using Python's socket library.
         """
         if is_valid_ip(address):
-            irc.reply(self._gethostbyaddr(address), prefixNick=False)
+            irc.reply(_gethostbyaddr(address), prefixNick=False)
         elif self._isnick(address):  # Valid nick?
             nick = address
             try:
                 userHostmask = irc.state.nickToHostmask(nick)
-                (nick, _, host) = ircutils.splitHostmask(userHostmask)  # Returns the nick, user, host of a user hostmask.
-                irc.reply(self._gethostbyaddr(host), prefixNick=False)
+                (nick, _, host) = ircutils.splitHostmask(userHostmask)  # Returns the nick and host of a user hostmask.
+                irc.reply(_gethostbyaddr(host), prefixNick=False)
             except KeyError:
                 irc.error('No such nick.', Raise=True)
         else:  # Neither IP or IRC user nick.
-            irc.reply(self._getaddrinfo(address), prefixNick=False)
+            irc.reply(_getaddrinfo(address), prefixNick=False)
 
     dns = wrap(dns, ['something'])
-
-    def _getaddrinfo(self, host):
-        """Get host information. Use returned IP address
-        to find the (approximate) geolocation of the host.
-        """
-        d = urlparse(host)
-
-        if d.scheme:
-            host = d.netloc
-
-        try:
-            result = socket.getaddrinfo(host, None)
-        except socket.timeout as err:  # Timed out trying to connect
-            return '%s' % err
-        except socket.gaierror as err:
-            return '%s' % err
-
-        ipaddress = result[0][4][0]
-        geoip = _geoip(ipaddress)
-
-        dns = color.bold(color.teal('DNS: '))
-        loc = color.bold(color.teal('LOC: '))
-
-        return '%s%s resolves to [%s] %s%s' % (dns, host, ipaddress, loc, geoip)
-
-    def _gethostbyaddr(self, ip):
-        """Do a reverse lookup for ip.
-        """
-        try:
-            (hostname, _, addresses) = socket.gethostbyaddr(ip)
-        except socket.timeout as err:  # Name/service not known or failure in name resolution
-            return '%s' % err
-        except socket.error as err:  # Catch any errors.
-            return '%s' % err
-
-        address = addresses[0]
-        geoip = _geoip(address)
-        vip = is_valid_ip(ip)
-
-        dns = color.bold(color.teal('DNS: '))
-        loc = color.bold(color.teal('LOC: '))
-
-        # Check whether 'ip' consists of alphabetic characters - VHost. Print output accordingly.
-        if not vip:
-            return '%s%s resolves to [%s] %s%s' % (dns, hostname, address, loc, geoip)
-
-        return '%s%s resolves to [%s] %s%s' % (dns, address, hostname, loc, geoip)
 
     def _isnick(self, nick):
         """ Checks to see if a nickname `nick` is valid.

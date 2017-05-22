@@ -1,5 +1,6 @@
-###
-# coding: utf-8
+# pylint: disable=missing-docstring
+# pylint: disable=unused-argument
+# pylint: disable=invalid-name
 
 ###
 # Copyright (c) 2016 - 2017, Barry Suridge
@@ -48,7 +49,7 @@ except ImportError as err:
     raise Exception('ERROR. I did not find Magic installed. I cannot process images w/o this. [%s]', err)
 
     ###############
-    #  UTILITIES  #
+    #  FUNCTIONS  #
     ###############
 
 def _cleantitle(msg):
@@ -102,7 +103,7 @@ def _getsoup(url):
     #    MAIN    #
     ##############
 
-class Titlerz(callbacks.Plugin):
+class Titlerz(callbacks.Plugin):  # pylint: disable=too-many-ancestors
     """Titlerz plugin."""
 
     def __init__(self, irc):
@@ -171,7 +172,7 @@ class Titlerz(callbacks.Plugin):
         elif response['content-type'].startswith('text/'):
             try:
                 o = self._gettitle(url)
-            except Exception as err:
+            except Exception as err:  # pylint: disable=broad-except
                 # Non-fatal error traceback information
                 self.log.info(traceback.format_exc())
                 return 'Error: %s' % err
@@ -230,7 +231,7 @@ class Titlerz(callbacks.Plugin):
             size = len(response.content)
             typeoffile = magic.from_buffer(response.content)
             return 'Content type: %s - Size: %s' % (typeoffile, str(_bytesto(size, 'k')))
-        except Exception as err:  # give a detailed error here in the logs.
+        except Exception as err:  # pylint: disable=broad-except
             self.log.error('Error: _filetype: error trying to parse %s via other (else) :: %s', url, err)
             self.log.error('ERROR: _filetype: no handler for %s at %s', response.headers['content-type'], url)
             return None

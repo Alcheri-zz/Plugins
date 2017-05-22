@@ -63,7 +63,7 @@ def yellow(s):
 def light_green(s):
     """Returns a light green string."""
     return '\x0309%s\x03' % s
-    
+
 def teal(s):
     """Returns a teal string."""
     return '\x0310%s\x03' % s
