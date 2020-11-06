@@ -83,7 +83,7 @@ class MyPing(callbacks.Plugin):
 
     threaded = True
 
-    def pingz(self, irc, msg, args, address):
+    def pings(self, irc, msg, args, address):
         """An alternative to Supybot's PING function."""
 
         txt = color.bold(color.teal(' Is invalid!'))
@@ -101,7 +101,7 @@ class MyPing(callbacks.Plugin):
         else:
             irc.reply(address + txt)
 
-    pingz = wrap(pingz, ['something'])
+    pings = wrap(pings, ['something'])
     
 Class = MyPing
 
