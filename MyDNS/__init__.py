@@ -1,5 +1,5 @@
 ###
-# Copyright (c) 2016, Barry Suridge
+# Copyright (c) 2016 - 2020, Barry Suridge
 # All rights reserved.
 #
 #
@@ -14,7 +14,7 @@ import supybot.world as world
 
 # Use this for the version of this plugin.  You may wish to put a CVS keyword
 # in here if you're keeping the plugin in CVS or some similar system.
-__version__ = "1.0.4"
+__version__ = "1.0.5"
 
 # XXX Replace this with an appropriate author or supybot.Author instance.
 __author__ = supybot.authors.unknown
