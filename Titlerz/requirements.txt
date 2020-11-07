@@ -1,5 +1,0 @@
-beautifulsoup4
-python-lxml
-future
-pillow
-python-magic
