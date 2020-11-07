@@ -5,7 +5,7 @@ Returns the ip of <hostname | URL | nick | ip or IPv6> or the reverse DNS hostna
 Configuring:
 ===========
 
-** None required.
+* `/msg yourbot unload Internet`
 
 Setting up:
 ==========
