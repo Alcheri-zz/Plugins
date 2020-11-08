@@ -11,8 +11,8 @@ Get an API key: [ipstack](https://ipstack.com/)
 Unload the Internet plugin as it conflicts with this plugin:
 
 Configure your bot: 
-                    `/msg yourbot config plugins.MyDNS.apikeys API-KEY`
-                    `/msg yourbot config unload Internet'
+`/msg yourbot config plugins.MyDNS.apikeys API-KEY`
+`/msg yourbot config unload Internet'
 
 Setting up:
 ==========
