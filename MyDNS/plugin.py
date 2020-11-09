@@ -136,7 +136,7 @@ class MyDNS(callbacks.Plugin):  # pylint: disable=too-many-ancestors
 
         try:
             response = urlopen(url, timeout=1).read().decode('utf8')
-        except OSError as err:
+        except URLError as err:
             if hasattr(err, 'reason'):
                 return 'We failed to reach a server. Reason: %s' % err.reason
             elif hasattr(err, 'code'):
