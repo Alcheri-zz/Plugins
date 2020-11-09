@@ -1,6 +1,7 @@
 ![Supported Python versions](https://img.shields.io/badge/python-3.4%2C%203.5%2C%203.6%2C%203.7%2C%203.8-blue.svg)
 
 * OnJoin
+===========
 
 Send a random notice to a user entering a channel.
 
