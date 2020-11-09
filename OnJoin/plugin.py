@@ -13,7 +13,7 @@ from future.utils import raise_from
 import random
 import os.path
 
-import supybot.ircutils as ircutils
+import supybot.ircutils as utils
 import supybot.callbacks as callbacks
 try:
     from supybot.i18n import PluginInternationalization
@@ -22,9 +22,6 @@ except ImportError:
     # Placeholder that allows to run the plugin on a bot
     # without the i18n module
     _ = lambda x: x
-
-# Text formatting library
-from .local import color
 
 class OnJoin(callbacks.Plugin):  # pylint: disable=too-many-ancestors
     """Send a notice to all users entering a channel."""
@@ -42,7 +39,7 @@ class OnJoin(callbacks.Plugin):  # pylint: disable=too-many-ancestors
 
         # Check if in a channel and see if we should be 'disabled' in it.
         # config channel #channel plugins.onjoin.enable True or False (or On or Off)
-        if ircutils.isChannel(channel) and self.registryValue('enable', channel):
+        if utils.isChannel(channel) and self.registryValue('enable', channel):
             p = os.path.abspath(os.path.dirname(__file__))
             p = p + '/quotes.txt'
             fp = str(p)
@@ -58,8 +55,8 @@ class OnJoin(callbacks.Plugin):  # pylint: disable=too-many-ancestors
                         if random.uniform(0, line_num) < 1:
                             selected_line = line
                 # It's not the bot.
-                if ircutils.strEqual(irc.nick, msg.nick) is False:
-                    irc.reply(color.teal(selected_line.strip()), notice=True, private=True, to=msg.nick)
+                if utils.strEqual(irc.nick, msg.nick) is False:
+                    irc.reply(self._teal(selected_line.strip()), notice=True, private=True, to=msg.nick)
                 else:
                     return None
             except IOError as err:
@@ -67,6 +64,10 @@ class OnJoin(callbacks.Plugin):  # pylint: disable=too-many-ancestors
                 raise_from(FileError('failed to open'), err)
         else:
             return None
+
+    def _teal(self, string):
+        """Return a teal coloured string."""
+        return utils.bold(utils.mircColor(string, 'teal'))
 
 class FileError(Exception):
     """Non-fatal error traceback."""
