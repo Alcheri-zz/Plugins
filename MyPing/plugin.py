@@ -37,7 +37,7 @@ import validators
 import supybot.utils as utils
 from supybot.commands import *
 import supybot.plugins as plugins
-import supybot.ircutils as ircutils
+import supybot.ircutils as utils
 import supybot.callbacks as callbacks
 try:
     from supybot.i18n import PluginInternationalization
@@ -50,8 +50,6 @@ except ImportError:
     ###############
     #  FUNCTIONS  #
     ###############
-# Text colour formatting library
-from .local import color
 
 def _Validate (host):
     if not validators.domain(host):
@@ -86,7 +84,7 @@ class MyPing(callbacks.Plugin):
     def pings(self, irc, msg, args, address):
         """An alternative to Supybot's PING function."""
 
-        txt = color.bold(color.teal(' Is invalid!'))
+        txt = self._teal(' Is invalid!')
 
         if _Validate (address):    
             cmd = shlex.split("ping -c1 " + str(address))       
@@ -102,6 +100,10 @@ class MyPing(callbacks.Plugin):
             irc.reply(address + txt)
 
     pings = wrap(pings, ['something'])
+
+    def _teal(self, string):
+        """Return a teal coloured string."""
+        return utils.bold(utils.mircColor(string, 'teal'))
     
 Class = MyPing
 
