@@ -15,8 +15,9 @@ from urllib.request import urlopen
 from urllib.error import URLError
 
 from supybot.commands import *
-import supybot.ircutils as ircutils
+import supybot.ircutils as utils
 import supybot.callbacks as callbacks
+
 try:
     from supybot.i18n import PluginInternationalization
     _ = PluginInternationalization('MyDNS')
@@ -28,11 +29,11 @@ except ImportError:
     ###############
     #  FUNCTIONS  #
     ###############
-
 def is_valid_ip(ipaddress):
     """Validates IP addresses.
     """
-    return validators.ip_address.ipv4(ipaddress) or validators.ip_address.ipv6(ipaddress)
+    ip = validators.ip_address.ipv4(ipaddress) or validators.ip_address.ipv6(ipaddress)
+    return ip
 
 class MyDNS(callbacks.Plugin):  # pylint: disable=too-many-ancestors
     """An alternative to Supybot's DNS function.
@@ -64,22 +65,18 @@ class MyDNS(callbacks.Plugin):  # pylint: disable=too-many-ancestors
         Returns the ip of <hostname | Nick | URL | ip or IPv6> or the reverse
         DNS hostname of <ip> using Python's socket library
         """
-
         if is_valid_ip(address):
-            try:
-                irc.reply(self._gethostbyaddr(address), prefixNick=False)
-            except Exception as err:
-	            irc.error(err, Raise=True)
+            irc.reply(self._gethostbyaddr(address), prefixNick=False)
         elif self._isnick(address):  # Valid nick?
             nick = address
             try:
                 userHostmask = irc.state.nickToHostmask(nick)
-                (nick, _, host) = ircutils.splitHostmask(userHostmask)  # Returns the nick and host of a user hostmask.
+                (nick, _, host) = utils.splitHostmask(userHostmask)  # Returns the nick and host of a user hostmask.
                 irc.reply(self._gethostbyaddr(host), prefixNick=False)
             except KeyError:
                 irc.error('No such nick.', Raise=True)
         else:  # Neither IP or IRC user nick.
-            irc.reply(self._getaddrinfo(address), prefixNick=False)
+            irc.reply(self._getaddrinfo(address), prefixNick=False)	    
 
     dns = wrap(dns, ['something'])
 
@@ -94,8 +91,8 @@ class MyDNS(callbacks.Plugin):  # pylint: disable=too-many-ancestors
 
         try:
             result = socket.getaddrinfo(host, None)
-        except OSError as msg:  # Catch all errors.
-            raise Exception(msg)
+        except socket.gaierror as msg:  # Catch failed address lookup.
+            return Exception(msg)
             
         ipaddress = result[0][4][0]
         geoip = self._geoip(ipaddress)
@@ -110,8 +107,8 @@ class MyDNS(callbacks.Plugin):  # pylint: disable=too-many-ancestors
         """
         try:
             (hostname, _, addresses) = socket.gethostbyaddr(ip)
-        except OSError as msg:  # Catch all errors.
-            raise Exception(msg)
+        except socket.herror as msg:  # Catch failed ip address lookup.
+            return Exception(msg)
 
         address = addresses[0]
         geoip = self._geoip(address)
@@ -173,7 +170,7 @@ class MyDNS(callbacks.Plugin):  # pylint: disable=too-many-ancestors
 
     def _teal(self, string):
         """Return a teal coloured string."""
-        return ircutils.bold(ircutils.mircColor(string, 'teal'))
+        return utils.bold(utils.mircColor(string, 'teal'))
 
 Class = MyDNS
 
