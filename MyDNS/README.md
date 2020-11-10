@@ -18,10 +18,7 @@ Configure your bot:
 Setting up:
 ==========
 
-* Required Python libraries:
-    - validators
-    * pip3 install validators
-- Or use pip if this points to your Py3 environment.
+* No Required external Python libraries.
 
 Using:
 =====
