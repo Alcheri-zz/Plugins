@@ -156,7 +156,7 @@ class MyDNS(callbacks.Plugin):
         """
         try:
             (hostname, _, addresses) = socket.gethostbyaddr(ip)
-        except socket.herror as msg:  # Catch failed ip address lookup.
+        except socket.gaierror as msg:  # Catch failed ip address lookup.
             return Exception(msg)
 
         address = addresses[0]
