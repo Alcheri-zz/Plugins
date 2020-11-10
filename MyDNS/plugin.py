@@ -8,7 +8,6 @@
 # My plugins
 import json    # JavaScript Object Notation
 import socket  # Low-level networking interface
-import validators # Python Data Validation for Humans
 # For Python 3.0 and later
 from urllib.parse import urlparse
 from urllib.request import urlopen
@@ -29,13 +28,63 @@ except ImportError:
     ###############
     #  FUNCTIONS  #
     ###############
-def is_valid_ip(ipaddress):
-    """Validates IP addresses.
-    """
-    ip = validators.ip_address.ipv4(ipaddress) or validators.ip_address.ipv6(ipaddress)
-    return ip
+def is_valid_ip(s):
+    """Returns whether or not a given string is an IP address.
 
-class MyDNS(callbacks.Plugin):  # pylint: disable=too-many-ancestors
+    >>> isIP('255.255.255.255')
+    1
+
+    >>> isIP('::1')
+    0
+    """
+    return is_IPV4(s) or is_IPV6(s)
+
+def is_IPV4(s):
+    """Returns whether or not a given string is an IPV4 address.
+
+    >>> isIPV4('255.255.255.255')
+    1
+
+    >>> isIPV4('abc.abc.abc.abc')
+    0
+    """
+    if set(s) - set('0123456789.'):
+        # inet_aton ignores trailing data after the first valid IP address
+        return False
+    try:
+        return bool(socket.inet_aton(str(s)))
+    except socket.error:
+        return False
+
+def brute_IsIPV6(s):
+    if s.count('::') <= 1:
+        L = s.split(':')
+        if len(L) <= 8:
+            for x in L:
+                if x:
+                    try:
+                        int(x, 16)
+                    except ValueError:
+                        return False
+            return True
+    return False
+
+def is_IPV6(s):
+    """Returns whether or not a given string is an IPV6 address."""
+    try:
+        if hasattr(socket, 'inet_pton'):
+            return bool(socket.inet_pton(socket.AF_INET6, s))
+        else:
+            return brute_IsIPV6(s)
+    except socket.error:
+        try:
+            socket.inet_pton(socket.AF_INET6, '::')
+        except socket.error:
+            # We gotta fake it. Tricky.
+            return brute_IsIPV6(s)
+        return False
+
+class MyDNS(callbacks.Plugin):
     """An alternative to Supybot's DNS function.
     """
 
