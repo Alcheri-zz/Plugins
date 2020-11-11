@@ -5,13 +5,13 @@
 #
 ###
 
-# My plugins
 import json    # JavaScript Object Notation
 import socket  # Low-level networking interface
 # For Python 3.0 and later
 from urllib.parse import urlparse
 from urllib.request import urlopen
 from urllib.error import URLError
+import ipaddress
 
 from supybot.commands import *
 import supybot.ircutils as utils
@@ -28,60 +28,16 @@ except ImportError:
     ###############
     #  FUNCTIONS  #
     ###############
-def is_valid_ip(s):
+
+def is_ip(s):
     """Returns whether or not a given string is an IP address.
-
-    >>> isIP('255.255.255.255')
-    1
-
-    >>> isIP('::1')
-    0
     """
-    return is_IPV4(s) or is_IPV6(s)
-
-def is_IPV4(s):
-    """Returns whether or not a given string is an IPV4 address.
-
-    >>> isIPV4('255.255.255.255')
-    1
-
-    >>> isIPV4('abc.abc.abc.abc')
-    0
-    """
-    if set(s) - set('0123456789.'):
-        # inet_aton ignores trailing data after the first valid IP address
-        return False
     try:
-        return bool(socket.inet_aton(str(s)))
-    except socket.error:
-        return False
-
-def brute_IsIPV6(s):
-    if s.count('::') <= 1:
-        L = s.split(':')
-        if len(L) <= 8:
-            for x in L:
-                if x:
-                    try:
-                        int(x, 16)
-                    except ValueError:
-                        return False
-            return True
-    return False
-
-def is_IPV6(s):
-    """Returns whether or not a given string is an IPV6 address."""
-    try:
-        if hasattr(socket, 'inet_pton'):
-            return bool(socket.inet_pton(socket.AF_INET6, s))
-        else:
-            return brute_IsIPV6(s)
-    except socket.error:
-        try:
-            socket.inet_pton(socket.AF_INET6, '::')
-        except socket.error:
-            # We gotta fake it. Tricky.
-            return brute_IsIPV6(s)
+        ip = ipaddress.ip_address(s)
+        # print('%s is a correct IP%s address.' % (ip, ip.version))
+        return True
+    except ValueError:
+        # print('address/netmask is invalid: %s' % ip_or_hostname)
         return False
 
 class MyDNS(callbacks.Plugin):
@@ -114,7 +70,7 @@ class MyDNS(callbacks.Plugin):
         Returns the ip of <hostname | Nick | URL | ip or IPv6> or the reverse
         DNS hostname of <ip> using Python's socket library
         """
-        if is_valid_ip(address):
+        if is_ip(address):
             irc.reply(self._gethostbyaddr(address), prefixNick=False)
         elif self._isnick(address):  # Valid nick?
             nick = address
@@ -123,7 +79,7 @@ class MyDNS(callbacks.Plugin):
                 (nick, _, host) = utils.splitHostmask(userHostmask)  # Returns the nick and host of a user hostmask.
                 irc.reply(self._gethostbyaddr(host), prefixNick=False)
             except KeyError:
-                irc.error('No such nick.', Raise=True)
+                irc.error('No such nick.', prefixNick=False, Raise=True)
         else:  # Neither IP or IRC user nick.
             irc.reply(self._getaddrinfo(address), prefixNick=False)	    
 
@@ -140,8 +96,10 @@ class MyDNS(callbacks.Plugin):
 
         try:
             result = socket.getaddrinfo(host, None)
-        except socket.gaierror as msg:  # Catch failed address lookup.
-            return Exception(msg)
+        except Exception as err:  # Catch failed address lookup.
+            return Exception(err)
+        except:
+            return 'There was an error.'
             
         ipaddress = result[0][4][0]
         geoip = self._geoip(ipaddress)
@@ -155,22 +113,17 @@ class MyDNS(callbacks.Plugin):
         """Do a reverse lookup for ip.
         """
         try:
-            (hostname, _, addresses) = socket.gethostbyaddr(ip)
-        except socket.gaierror as msg:  # Catch address-related errors.
-            return Exception(msg)
-
-        address = addresses[0]
-        geoip = self._geoip(address)
-        vip = is_valid_ip(ip)
-
-        dns = self._teal('DNS: ')
-        loc = self._teal('LOC: ')
-
-        # Check whether 'ip' consists of alphabetic characters - VHost. Print output accordingly.
-        if not vip:
-            return '%s%s resolves to [%s] %s%s' % (dns, hostname, address, loc, geoip)
-
-        return '%s%s resolves to [%s] %s%s' % (dns, address, hostname, loc, geoip)
+            (hostname, _, address) = socket.gethostbyaddr(ip)
+            hostname = hostname + ' <> ' + address[0]
+            geoip = self._geoip(address[0])
+            shortname = hostname.split('.')[0]
+            dns = self._teal('DNS: ')
+            loc = self._teal('LOC: ')
+            return ('{}<{}> [{}] {} {}').format(dns, shortname, hostname, loc, geoip)
+        except OSError as err:  # Catch address-related errors.
+            return Exception(err)
+        except socket.timeout as err:
+            return err
 
     def _geoip(self, address):
         """Search for the geolocation of IP addresses.
@@ -181,15 +134,17 @@ class MyDNS(callbacks.Plugin):
         if not apikey:
             raise Exception('No API key defined')
 
-        url = 'http://api.ipstack.com/' + address + '?access_key=' + apikey
-
         try:
+            url = 'http://api.ipstack.com/' + address + '?access_key=' + apikey
             response = urlopen(url, timeout=1).read().decode('utf8')
         except URLError as err:
             if hasattr(err, 'reason'):
                 return 'We failed to reach a server. Reason: %s' % err.reason
             elif hasattr(err, 'code'):
                 return 'The server couldn\'t fulfill the request: %s' % err.code
+        except socket.timeout:
+            return 'Socket timed out - URL %s' % url
+
         data = json.loads(response)
 
         _city    = 'City:%s ' % data['city'] if data['city'] else ''
