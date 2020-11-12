@@ -31,7 +31,6 @@ import sys
 import shlex
 import subprocess
 import re
-import validators
 
 ###
 import supybot.utils as utils
@@ -51,26 +50,20 @@ except ImportError:
     #  FUNCTIONS  #
     ###############
 
-def _Validate (host):
-    if not validators.domain(host):
-        if validators.ip_address.ipv4(host) or validators.ip_address.ipv6(host):
-	        return True
-        else:
-            return False
-    else:
-        return True
-
 def _GetMatch (output):
-    match = re.search('([\d]*\.[\d]*)/([\d]*\.[\d]*)/([\d]*\.[\d]*)/([\d]*\.[\d]*)', str(output))
-	
-    ping_min = match.group(1)
-    ping_avg = match.group(2)
-    ping_max = match.group(3)
+    """
 
-    match = re.search('(\d*)% packet loss', str(output))
-    pkt_loss = match.group(1)
+    :rtype: dict or None
+    """
+    lines = output.split("\n")
+    total = lines[-2].split(',')[3].split()[1]
+    loss = lines[-2].split(',')[2].split()[0]
+    timing = lines[-1].split()[3].split('/')
 	
-    return str(pkt_loss)
+    elapsed = int(float(timing[1]))
+    seconds, millisends = divmod(elapsed,1000)
+
+    return(f'Time elapsed: {seconds} seconds Packet Loss: {loss}')
 
 class MyPing(callbacks.Plugin):
 
@@ -78,28 +71,64 @@ class MyPing(callbacks.Plugin):
 		
         self.__parent = super(MyPing, self)
         self.__parent.__init__(irc)
+        self._special_chars = (
+            '-',
+            '[',
+            ']',
+            '\\',
+            '`',
+            '^',
+            '{',
+            '}',
+            '_')
 
     threaded = True
 
-    def pings(self, irc, msg, args, address):
+    def pings(self, irc, msg, args, host):
         """An alternative to Supybot's PING function."""
+		
+        channel = msg.args[0]
 
-        txt = self._teal(' Is invalid!')
-
-        if _Validate (address):    
-            cmd = shlex.split("ping -c1 " + str(address))       
+        # Check if we should be 'disabled' in a channel.
+        # config channel #channel plugins.myping.enable True or False (or On or Off)
+        if not self.registryValue('enable', channel):
+            return
+        if self._isnick(host):  # Valid nick?
+            nick = host
             try:
-                output = subprocess.check_output(cmd)
-                pkt_loss = _GetMatch (output)
-            except subprocess.CalledProcessError as err:
+                userHostmask = irc.state.nickToHostmask(nick)
+                # Returns the nick and host of a user hostmask.
+                (nick, _, host) = utils.splitHostmask(userHostmask)
+            except KeyError:
+                #irc.reply(f"[{nick}] is unknown.", prefixNick=False)
+                pass
+#        cmd = shlex.split("ping -c1 " + str(host))
+        cmd = shlex.split(f'ping -c 1 -W 1 {host}')     
+        try:
+            #output = subprocess.check_output(cmd)
+            output = subprocess.check_output(cmd).decode().strip()
+            elapsed_loss = _GetMatch (output)
+        except subprocess.CalledProcessError as err:
             #Will print the command failed
-                irc.reply("{0} is Not Reachable".format(cmd[-1]))
-            else:
-                irc.reply("{0} is Reachable ~".format(cmd[-1]) + " Packet Loss: " + pkt_loss+"%")
+            irc.reply(f'{cmd[-1]} is Not Reachable', prefixNick=False)
         else:
-            irc.reply(address + txt)
+            irc.reply(f'{cmd[-1]} is Reachable ~ {elapsed_loss}', prefixNick=False)
 
     pings = wrap(pings, ['something'])
+
+    def _isnick(self, nick):
+        """ Checks to see if a nickname `nick` is valid.
+        According to :rfc:`2812 #section-2.3.1`, section 2.3.1, a nickname must start
+        with either a letter or one of the allowed special characters, and after
+        that it may consist of any combination of letters, numbers, or allowed
+        special characters.
+        """
+        if not nick[0].isalpha() and nick[0] not in self._special_chars:
+            return False
+        for char in nick[1:]:
+            if not char.isalnum() and char not in self._special_chars:
+                return False
+        return True
 
     def _teal(self, string):
         """Return a teal coloured string."""

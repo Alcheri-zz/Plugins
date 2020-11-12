@@ -5,15 +5,12 @@ Returns the ping result of <hostname | ip or IPv6> using Python's shlex library.
 Configuring:
 ===========
 
-** None required.
+* config channel #channel plugins.myping.enable True or False (or On or Off)
 
 Setting up:
 ==========
 
-* Required Python libraries:
-    - validators
-    * pip3 install validators
-- Or use pip if this points to your Py3 environment.
+* None required.
 
 Using:
 =====

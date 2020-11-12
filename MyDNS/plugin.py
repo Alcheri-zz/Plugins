@@ -7,7 +7,7 @@
 
 import json    # JavaScript Object Notation
 import socket  # Low-level networking interface
-# For Python 3.0 and later
+# For Python 3.3 and later
 from urllib.parse import urlparse
 from urllib.request import urlopen
 from urllib.error import URLError
@@ -34,10 +34,10 @@ def is_ip(s):
     """
     try:
         ip = ipaddress.ip_address(s)
-        # print('%s is a correct IP%s address.' % (ip, ip.version))
+        # print(f'{ip} is a correct IP{ip.version} address.')
         return True
     except ValueError:
-        # print('address/netmask is invalid: %s' % ip_or_hostname)
+        # print(f'address/netmask is invalid: {s}')
         return False
 
 class MyDNS(callbacks.Plugin):
@@ -79,7 +79,7 @@ class MyDNS(callbacks.Plugin):
                 (nick, _, host) = utils.splitHostmask(userHostmask)  # Returns the nick and host of a user hostmask.
                 irc.reply(self._gethostbyaddr(host), prefixNick=False)
             except KeyError:
-                irc.error('No such nick.', prefixNick=False, Raise=True)
+                irc.reply(f"[{nick}] is unknown.", prefixNick=False)
         else:  # Neither IP or IRC user nick.
             irc.reply(self._getaddrinfo(address), prefixNick=False)	    
 
@@ -96,8 +96,8 @@ class MyDNS(callbacks.Plugin):
 
         try:
             result = socket.getaddrinfo(host, None)
-        except Exception as err:  # Catch failed address lookup.
-            return Exception(err)
+        except OSError as err:  # Catch failed address lookup.
+            return (f'OS error: {err}')
         except:
             return 'There was an error.'
             
@@ -107,7 +107,7 @@ class MyDNS(callbacks.Plugin):
         dns = self._teal('DNS: ')
         loc = self._teal('LOC: ')
 
-        return '%s%s resolves to [%s] %s%s' % (dns, host, ipaddress, loc, geoip)
+        return (f'{dns}{host} resolves to [{ipaddress}] {loc}{geoip}')
 
     def _gethostbyaddr(self, ip):
         """Do a reverse lookup for ip.
@@ -117,13 +117,13 @@ class MyDNS(callbacks.Plugin):
             hostname = hostname + ' <> ' + address[0]
             geoip = self._geoip(address[0])
             shortname = hostname.split('.')[0]
-            dns = self._teal('DNS: ')
-            loc = self._teal('LOC: ')
-            return ('{}<{}> [{}] {} {}').format(dns, shortname, hostname, loc, geoip)
+            dns = self._teal('DNS:')
+            loc = self._teal('LOC:')
+            return (f'{dns} <{shortname}> [{hostname}] {loc} {geoip}')
         except OSError as err:  # Catch address-related errors.
-            return Exception(err)
-        except socket.timeout as err:
-            return err
+            return (f'OS error: {err}')
+        except:
+            return 'There was an error.'
 
     def _geoip(self, address):
         """Search for the geolocation of IP addresses.
@@ -139,13 +139,13 @@ class MyDNS(callbacks.Plugin):
             response = urlopen(url, timeout=1).read().decode('utf8')
         except URLError as err:
             if hasattr(err, 'reason'):
-                return 'We failed to reach a server. Reason: %s' % err.reason
+                return (f'We failed to reach a server. Reason: {err.reason}')
             elif hasattr(err, 'code'):
-                return 'The server couldn\'t fulfill the request: %s' % err.code
+                return (f'The server couldn\'t fulfill the request: {err.code}')
         except socket.timeout:
-            return 'Socket timed out - URL %s' % url
-
-        data = json.loads(response)
+            return (f'Socket timed out - URL {url}')
+        else:
+            data = json.loads(response)
 
         _city    = 'City:%s ' % data['city'] if data['city'] else ''
         _state   = 'State:%s ' % data['region_name'] if data['region_name'] else ''
