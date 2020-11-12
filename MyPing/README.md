@@ -15,6 +15,6 @@ Setting up:
 Using:
 =====
 
-[prefix/nick] pings <hostname | Nick | ip or IPv6>
+[prefix/nick] pings <hostname | Nick | IPv4 or IPv6>
 
 **Note:** [prefix] may be set via 'config reply.whenAddressedBy.chars'
