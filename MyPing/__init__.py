@@ -9,6 +9,11 @@
 MyPing: An alternative to Supybot's Ping function.
 """
 
+import sys
+# Python 3 ONLY!!
+if sys.version_info[0] < 3:
+    raise RuntimeError("This plugin requires Python 3.")
+
 import supybot
 import supybot.world as world
 
@@ -24,11 +29,14 @@ __author__ = 'Barry Suridge'
 __contributors__ = {}
 
 # This is a url where the most recent plugin package can be downloaded.
-__url__ = ''
+__url__ = 'https://github.com/Alcheri/Plugins.git'
 
 from . import config
 from . import plugin
-from imp import reload
+if sys.version_info >= (3, 4):
+    from importlib import reload
+else:
+    from imp import reload
 # In case we're being reloaded.
 reload(config)
 reload(plugin)
