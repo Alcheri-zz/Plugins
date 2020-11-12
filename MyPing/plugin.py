@@ -30,7 +30,6 @@
 import sys
 import shlex
 import subprocess
-import re
 
 ###
 import supybot.utils as utils
@@ -105,7 +104,6 @@ class MyPing(callbacks.Plugin):
 #        cmd = shlex.split("ping -c1 " + str(host))
         cmd = shlex.split(f'ping -c 1 -W 1 {host}')     
         try:
-            #output = subprocess.check_output(cmd)
             output = subprocess.check_output(cmd).decode().strip()
             elapsed_loss = _GetMatch (output)
         except subprocess.CalledProcessError as err:

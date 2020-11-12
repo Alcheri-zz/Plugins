@@ -70,6 +70,12 @@ class MyDNS(callbacks.Plugin):
         Returns the ip of <hostname | Nick | URL | ip or IPv6> or the reverse
         DNS hostname of <ip> using Python's socket library
         """
+        channel = msg.args[0]
+
+        # Check if we should be 'disabled' in a channel.
+        # config channel #channel plugins.mydns.enable True or False (or On or Off)
+        if not self.registryValue('enable', channel):
+            return
         if is_ip(address):
             irc.reply(self._gethostbyaddr(address), prefixNick=False)
         elif self._isnick(address):  # Valid nick?

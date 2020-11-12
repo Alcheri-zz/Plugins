@@ -14,6 +14,7 @@ Configure your bot:
 
 * '/msg yourbot config plugins.MyDNS.apikeys API-KEY'
 * '/msg yourbot config unload Internet'
+* '/msg yourbotconfig channel #channel plugins.mydns.enable True or False (or On or Off)'
 
 Setting up:
 ==========
