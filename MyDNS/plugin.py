@@ -74,20 +74,21 @@ class MyDNS(callbacks.Plugin):
 
         # Check if we should be 'disabled' in a channel.
         # config channel #channel plugins.mydns.enable True or False (or On or Off)
-        if not self.registryValue('enable', channel):
-            return
-        if is_ip(address):
-            irc.reply(self._gethostbyaddr(address), prefixNick=False)
-        elif self._isnick(address):  # Valid nick?
-            nick = address
-            try:
-                userHostmask = irc.state.nickToHostmask(nick)
-                (nick, _, host) = utils.splitHostmask(userHostmask)  # Returns the nick and host of a user hostmask.
-                irc.reply(self._gethostbyaddr(host), prefixNick=False)
-            except KeyError:
-                irc.reply(f"[{nick}] is unknown.", prefixNick=False)
-        else:  # Neither IP or IRC user nick.
-            irc.reply(self._getaddrinfo(address), prefixNick=False)	    
+        if self.registryValue('enable', channel):
+            if is_ip(address):
+                irc.reply(self._gethostbyaddr(address), prefixNick=False)
+            elif self._isnick(address):  # Valid nick?
+                nick = address
+                try:
+                    userHostmask = irc.state.nickToHostmask(nick)
+                    (nick, _, host) = utils.splitHostmask(userHostmask)  # Returns the nick and host of a user hostmask.
+                    irc.reply(self._gethostbyaddr(host), prefixNick=False)
+                except KeyError:
+                    irc.reply(f"[{nick}] is unknown.", prefixNick=False)
+            else:  # Neither IP or IRC user nick.
+                irc.reply(self._getaddrinfo(address), prefixNick=False)
+        else:
+            return	    
 
     dns = wrap(dns, ['something'])
 
@@ -162,7 +163,10 @@ class MyDNS(callbacks.Plugin):
         _country = 'Country:%s ' % data['country_name'] if data['country_name'] else ''
         _zip     = 'Post/Zip Code:%s' % data['zip'] if data['zip'] else ''
 
-        return ''.join([_city, _state, _long, _lat, _code, _country, _zip])
+        s = ''
+        seq = [_city, _state, _long, _lat, _code, _country, _zip]
+
+        return (s.join( seq ))
 
     def _isnick(self, nick):
         """ Checks to see if a nickname `nick` is valid.

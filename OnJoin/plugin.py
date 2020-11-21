@@ -3,12 +3,11 @@
 # pylint: disable=invalid-name
 
 ##
-# Copyright (c) 2016, Barry Suridge
+# Copyright (c) 2016 - 2020, Barry Suridge
 # All rights reserved.
 #
-# Python 3
+# Python 3 and above ONLY!
 ###
-from future.utils import raise_from
 
 import random
 import os.path
@@ -39,7 +38,7 @@ class OnJoin(callbacks.Plugin):  # pylint: disable=too-many-ancestors
 
         # Check if in a channel and see if we should be 'disabled' in it.
         # config channel #channel plugins.onjoin.enable True or False (or On or Off)
-        if utils.isChannel(channel) and self.registryValue('enable', channel):
+        if self.registryValue('enable', channel):
             p = os.path.abspath(os.path.dirname(__file__))
             p = p + '/quotes.txt'
             fp = str(p)
@@ -58,12 +57,12 @@ class OnJoin(callbacks.Plugin):  # pylint: disable=too-many-ancestors
                 if utils.strEqual(irc.nick, msg.nick) is False:
                     irc.reply(self._teal(selected_line.strip()), notice=True, private=True, to=msg.nick)
                 else:
-                    return None
+                    pass
             except IOError as err:
                 # Non-fatal error traceback information
-                raise_from(FileError('failed to open'), err)
+                raise (FileError('failed to open'), err)
         else:
-            return None
+            return
 
     def _teal(self, string):
         """Return a teal coloured string."""

@@ -12,9 +12,10 @@ Unload the Internet plugin as it conflicts with this plugin:
 
 Configure your bot:
 
+* '/msg yourbot load mydns'
 * '/msg yourbot config plugins.MyDNS.apikeys API-KEY'
 * '/msg yourbot config unload Internet'
-* '/msg yourbotconfig channel #channel plugins.mydns.enable True or False (or On or Off)'
+* '/msg yourbot config channel #channel plugins.mydns.enable True or False (or On or Off)'
 
 Setting up:
 ==========
