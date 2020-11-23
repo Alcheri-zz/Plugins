@@ -33,7 +33,7 @@ def is_ip(s):
     """Returns whether or not a given string is an IP address.
     """
     try:
-        ip = ipaddress.ip_address(s)
+        ipaddress.ip_address(s)
         # print(f'{ip} is a correct IP{ip.version} address.')
         return True
     except ValueError:
@@ -147,8 +147,8 @@ class MyDNS(callbacks.Plugin):
         except URLError as err:
             if hasattr(err, 'reason'):
                 return (f'We failed to reach a server. Reason: {err.reason}')
-            elif hasattr(err, 'code'):
-                return (f'The server couldn\'t fulfill the request: {err.code}')
+            else:
+                return (f'The server couldn\'t fulfill the request: {err}')
         except socket.timeout:
             return (f'Socket timed out - URL {url}')
         else:

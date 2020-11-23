@@ -1,5 +1,5 @@
 ###
-# Copyright (c) 2020, Barry Suridge
+# Copyright (c) 2016 - 2020, Barry Suridge
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -48,21 +48,27 @@ except ImportError:
     ###############
     #  FUNCTIONS  #
     ###############
-
-def _GetMatch (output):
+def teal(string):
+    """Return a bolded teal coloured string.
     """
+    return utils.bold(utils.mircColor(string, 'teal'))
 
+def red(string):
+    """Return a bolded red coloured string.
+    """
+    return utils.bold(utils.mircColor(string, 'red'))
+
+def GetMatch(output):
+    """
     :rtype: dict or None
     """
     lines = output.split("\n")
-    total = lines[-2].split(',')[3].split()[1]
     loss = lines[-2].split(',')[2].split()[0]
-    timing = lines[-1].split()[3].split('/')
-	
+    timing = lines[-1].split()[3].split('/')	
     elapsed = int(float(timing[1]))
-    seconds, millisends = divmod(elapsed,1000)
+    time = divmod(elapsed,1000.0)
 
-    return(f'Time elapsed: {seconds} seconds Packet Loss: {loss}')
+    return(f'Time elapsed: {teal(time)} seconds/milliseconds Packet Loss: {teal(loss)}')
 
 class MyPing(callbacks.Plugin):
 
@@ -83,38 +89,37 @@ class MyPing(callbacks.Plugin):
 
     threaded = True
 
-    def pings(self, irc, msg, args, host):
-        """An alternative to Supybot's PING function."""
-		
+    def pINGS(self, irc, msg, args, host):
+        """<hostmask> | Nick | IPv4 or IPv6>
+        An alternative to Supybot's PING function.
+        """		
         channel = msg.args[0]
 
         # Check if we should be 'disabled' in a channel.
         # config channel #channel plugins.myping.enable True or False (or On or Off)
         if not self.registryValue('enable', channel):
             return
-        if self._isnick(host):  # Valid nick?
+        if self.isNick(host):  # Valid nick?
             nick = host
             try:
                 userHostmask = irc.state.nickToHostmask(nick)
                 # Returns the nick and host of a user hostmask.
                 (nick, _, host) = utils.splitHostmask(userHostmask)
             except KeyError:
-                #irc.reply(f"[{nick}] is unknown.", prefixNick=False)
                 pass
-#        cmd = shlex.split("ping -c1 " + str(host))
         cmd = shlex.split(f'ping -c 1 -W 1 {host}')     
         try:
             output = subprocess.check_output(cmd).decode().strip()
-            elapsed_loss = _GetMatch (output)
-        except subprocess.CalledProcessError as err:
+            elapsed_loss = GetMatch(output)
+        except subprocess.CalledProcessError:
             #Will print the command failed
-            irc.reply(f'{cmd[-1]} is Not Reachable', prefixNick=False)
+            irc.reply(f'{red(cmd[-1])} is Not Reachable', prefixNick=False)
         else:
-            irc.reply(f'{cmd[-1]} is Reachable ~ {elapsed_loss}', prefixNick=False)
+            irc.reply(f'{red(cmd[-1])} is Reachable ~ {elapsed_loss}', prefixNick=False)
 
-    pings = wrap(pings, ['something'])
+    pings = wrap(pINGS, ['something'])
 
-    def _isnick(self, nick):
+    def isNick(self, nick):
         """ Checks to see if a nickname `nick` is valid.
         According to :rfc:`2812 #section-2.3.1`, section 2.3.1, a nickname must start
         with either a letter or one of the allowed special characters, and after
@@ -128,10 +133,6 @@ class MyPing(callbacks.Plugin):
                 return False
         return True
 
-    def _teal(self, string):
-        """Return a teal coloured string."""
-        return utils.bold(utils.mircColor(string, 'teal'))
-    
 Class = MyPing
 
 # vim:set shiftwidth=4 softtabstop=4 expandtab textwidth=79:
