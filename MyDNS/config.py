@@ -38,8 +38,9 @@ conf.registerGlobalValue(
     MyDNS, 'ipstackAPI', registry.String(
         '', _("""Sets the API key for ipstack."""), private=True)
 )
-conf.registerChannelValue(MyDNS, 'enable',
-                          registry.Boolean(False, """Should plugin work in this channel?"""))
-
+conf.registerChannelValue(
+    MyDNS, 'enable', registry.Boolean(
+        False, """Should plugin work in this channel?""")
+)
 
 # vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:
