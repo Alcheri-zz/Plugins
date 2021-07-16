@@ -13,7 +13,7 @@ Unload the Internet plugin as it conflicts with this plugin:
 Configure your bot:
 
 * '/msg yourbot load mydns'
-* '/msg yourbot `config plugins.imdb.ipstackAPI your_key_here`'
+* '/msg yourbot `config plugins.MyDNS.ipstackAPI your_key_here`'
 * '/msg yourbot config unload Internet'
 * '/msg yourbot config channel #channel plugins.MyDNS.enable True or False (or On or Off)'
 
