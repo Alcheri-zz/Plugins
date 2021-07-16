@@ -129,6 +129,13 @@ class IMDb(callbacks.Plugin):
         """<title>
         Queries the OMDB API about an IMDb title. Search by title name or IMDb ID.
         """
+        channel = msg.channel
+        if not channel:
+            return
+        # Check if we should be 'disabled' in a channel.
+        # config channel #channel plugins.IMBd.enable True or False (or On or Off)
+        if not self.registryValue('enable', channel):
+            return
         url = None
         response = None
         result = None

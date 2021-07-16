@@ -38,7 +38,7 @@ try:
 except:
     # Placeholder that allows to run the plugin on a bot
     # without the i18n module
-    _ = lambda x: x
+    def _(x): return x
 
 
 def configure(advanced):
@@ -52,6 +52,12 @@ def configure(advanced):
 
 
 IMDb = conf.registerPlugin("IMDb")
+
+# Tweak added by Alcheri (https://github.com/Alcheri)
+# Select in which channel(s) the plugin should be enabled.
+
+conf.registerChannelValue(IMDb, 'enable',
+    registry.Boolean(False, _("""Should this plugin work in this channel?""")))
 
 conf.registerChannelValue(
     IMDb,
