@@ -1,3 +1,5 @@
+![Supported Python versions](https://img.shields.io/badge/python-3.4%2C%203.5%2C%203.6%2C%203.7%2C%203.8-blue.svg)
+
 Information about IMDb titles from the OMDB API.
 
 Obtain an [OMDB API Key](https://omdbapi.com/apikey.aspx)
@@ -45,3 +47,5 @@ language       | Language
 boxOffice      | Box Office
 production     | Production company
 poster         | Poster URL
+
+<p align="center">Copyright © 2015, butterscotchstallion & © 2020, oddluck <oddluck@riseup.net></p>
