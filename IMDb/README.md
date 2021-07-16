@@ -48,4 +48,4 @@ boxOffice      | Box Office
 production     | Production company
 poster         | Poster URL
 
-<p align="center">Copyright © 2015, butterscotchstallion & © 2020, oddluck <oddluck@riseup.net></p>
+Copyright © 2015, butterscotchstallion & © 2020, oddluck <oddluck@riseup.net>
