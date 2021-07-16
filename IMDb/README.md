@@ -6,7 +6,7 @@ Obtain an [OMDB API Key](https://omdbapi.com/apikey.aspx)
 
 `config plugins.imdb.omdbAPI your_key_here`
 
-`config channel supybot.plugins.IMDb.enable` True or False (On or Off, 1 or 0) to enable in a channel.
+`config channel supybot.plugins.IMDb.enable` *New feature*: True or False (On or Off, 1 or 0) to enable in a channel.
 
 `config plugins.imdb.google 0-2` 0 to disable search using the Google plugin. 1 to set first priority. 2 to set second priority.
 
