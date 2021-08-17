@@ -15,14 +15,14 @@ Setting up:
 
 * The following library is required. Run the command (below) from the Weather folder to install.
 * requests-cache: A persistent HTTP cache for the python requests library.
-* 'pip3 install -r requirements.txt'
+* `pip3 install -r requirements.txt`
 
 Configure your bot:
 ==================
 
-* '/msg yourbot load Weather'
-* '/msg yourbot `config plugins.Weather.openweatherAPI your_key_here`'
-* '/msg yourbot `config channel #channel plugins.Weather.enable True or False` (or On or Off)'
+* /msg yourbot load Weather
+* /msg yourbot `config plugins.Weather.openweatherAPI your_key_here`
+* /msg yourbot `config channel #channel plugins.Weather.enable True or False` (On or Off)
 
 Using:
 =====
@@ -31,4 +31,4 @@ Using:
 [prefix/nick] lookup&nbsp; [city <(Alpha-2) country code>]
 
 
-**Note:** [prefix] may be set via 'config reply.whenAddressedBy.chars'
+**Note:** [prefix] may be set via `config reply.whenAddressedBy.chars`
