@@ -38,6 +38,7 @@ except ImportError:
     CachedSession = None
     raise callbacks.Error(
         _('requests_cache is not installed; caching disabled.'))
+from time import sleep
 
 from supybot.commands import *
 from supybot import utils, plugins, ircutils, ircmsgs, callbacks, log
@@ -236,6 +237,7 @@ class Weather(callbacks.Plugin):
                             expire_after=180)
                 req = session.get(uri, headers=headers)
             else:
+                sleep(1)
                 req = requests.get(uri, headers=headers)
             data = req.json()
         except HTTPError as e:
