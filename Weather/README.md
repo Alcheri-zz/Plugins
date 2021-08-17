@@ -22,13 +22,13 @@ Configure your bot:
 
 * '/msg yourbot load Weather'
 * '/msg yourbot `config plugins.Weather.openweatherAPI your_key_here`'
-* '/msg yourbot config channel #channel plugins.Weather.enable True or False (or On or Off)'
+* '/msg yourbot `config channel #channel plugins.Weather.enable True or False` (or On or Off)'
 
 Using:
 =====
 
-[prefix/nick] weather [<city> <(Alpha-2) country code>] [<postcode, (Alpha-2) country code>]
- 
+[prefix/nick] weather [<city> <(Alpha-2) country code>] [<postcode, (Alpha-2) country code>]\
 [prefix/nick] lookup  [<city> <(Alpha-2) country code>]
+
 
 **Note:** [prefix] may be set via 'config reply.whenAddressedBy.chars'
