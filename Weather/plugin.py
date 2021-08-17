@@ -1,0 +1,347 @@
+###
+# Copyright © 2021, Barry Suridge
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+#   * Redistributions of source code must retain the above copyright notice,
+#     this list of conditions, and the following disclaimer.
+#   * Redistributions in binary form must reproduce the above copyright notice,
+#     this list of conditions, and the following disclaimer in the
+#     documentation and/or other materials provided with the distribution.
+#   * Neither the name of the author of this software nor the name of
+#     contributors to this software may be used to endorse or promote products
+#     derived from this software without specific prior written consent.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+###
+import re
+import requests
+import math
+from datetime import datetime
+from requests.models import HTTPError
+try:
+    from requests_cache import CachedSession
+except ImportError:
+    CachedSession = None
+    raise callbacks.Error(
+        _('requests_cache is not installed; caching disabled.'))
+
+from supybot.commands import *
+from supybot import utils, plugins, ircutils, ircmsgs, callbacks, log
+try:
+    from supybot.i18n import PluginInternationalization
+    _ = PluginInternationalization('Weather')
+except ImportError:
+    # Placeholder that allows to run the plugin on a bot
+    # without the i18n module
+    def _(x): return x
+
+# Unicode symbol (https://en.wikipedia.org/wiki/List_of_Unicode_characters#Latin-1_Supplement)
+apostrophe = u'\N{APOSTROPHE}'
+degree_sign = u'\N{DEGREE SIGN}'
+# micro_sign = u'\N{MICRO SIGN}'
+percent_sign = u'\N{PERCENT SIGN}'
+quotation_mark = u'\N{QUOTATION MARK}'
+
+headers = {
+    'User-Agent': 'Mozilla/5.0 (X11; Debian; Linux x86_64; rv:35.0) Gecko/20100101 Firefox/35.0',
+}
+
+def dd2dms(longitude, latitude):
+    # math.modf() splits whole number and decimal into tuple
+    # eg 53.3478 becomes (0.3478, 53)
+    split_degx = math.modf(longitude)
+
+    # the whole number [index 1] is the degrees
+    degrees_x = int(split_degx[1])
+
+    # multiply the decimal part by 60: 0.3478 * 60 = 20.868
+    # split the whole number part of the total as the minutes: 20
+    # abs() absolute value - no negative
+    minutes_x = abs(int(math.modf(split_degx[0] * 60)[1]))
+
+    # multiply the decimal part of the split above by 60 to get the seconds
+    # 0.868 x 60 = 52.08, round excess decimal places to 2 places
+    # abs() absolute value - no negative
+    seconds_x = abs(round(math.modf(split_degx[0] * 60)[0] * 60, 2))
+
+    # repeat for latitude
+    split_degy = math.modf(latitude)
+    degrees_y = int(split_degy[1])
+    minutes_y = abs(int(math.modf(split_degy[0] * 60)[1]))
+    seconds_y = abs(round(math.modf(split_degy[0] * 60)[0] * 60, 2))
+
+    # account for E/W & N/S
+    if degrees_x < 0:
+        EorW = 'W'
+    else:
+        EorW = 'E'
+
+    if degrees_y < 0:
+        NorS = 'S'
+    else:
+        NorS = 'N'
+
+    # abs() remove negative from degrees, was only needed for if-else above
+    x = str(abs(degrees_x)) + f'{degree_sign}' + str(minutes_x) + \
+        f'{apostrophe} ' + str(seconds_x) + f'{quotation_mark} ' + EorW
+    y = str(abs(degrees_y)) + f'{degree_sign}' + str(minutes_y) + \
+        f'{apostrophe} ' + str(seconds_y) + f'{quotation_mark} ' + NorS
+    return (x, y)
+
+class Weather(callbacks.Plugin):
+    """A simple OpenWeather plugin for Limnoria"""
+    threaded = True
+
+    def __init__(self, irc):
+
+        self.__parent = super(Weather, self)
+        self.__parent.__init__(irc)
+
+    def format_weather_output(self, location, data):
+        """Gather all the data - format it"""
+        current = data['current']
+        icon = current['weather'][0].get('icon')
+        staticon = self._get_status_icon(self, icon)
+        (LON, LAT) = dd2dms(data['lon'], data['lat'])
+        # current
+        cloud = current['clouds']
+        arrow = self._get_wind_direction(self, current['wind_deg'])
+        feelslike = round(current['feels_like'])
+        humid = current['humidity']
+        atmos = current['pressure']
+        dp = round(current['dew_point'])
+        try:
+            precip = data['hourly'][0]['rain'].get('1h')
+            precipico = '☔'
+        except KeyError:
+            precip = 0
+            precipico = ''
+        temp = round(current['temp'])
+        vis = (current['visibility'] / 1000)
+        uvi = round(current['uvi'])
+        uvicon = self._format_uvi_icon(self, uvi)
+        utc = (data['timezone_offset']/3600)
+        # weather
+        desc = current['weather'][0].get('description')
+        wind = round(current['wind_speed'])
+        try:
+            gust = round(current['wind_gust'])
+        except KeyError:
+            gust = 0
+        # Forecast day one
+        day1 = data['daily'][1]
+        day1name = datetime.fromtimestamp(day1['dt']).strftime('%A')
+        day1weather = day1['weather'][0].get('description')
+        day1highC = round(day1['temp'].get('max'))
+        day1lowC = round(day1['temp'].get('min'))
+
+        # Forecast day two
+        day2 = data['daily'][2]
+        day2name = datetime.fromtimestamp(day2['dt']).strftime('%A')
+        day2weather = day2['weather'][0].get('description')
+        day2highC = round(day2['temp'].get('max'))
+        day2lowC = round(day2['temp'].get('min'))
+
+        # Formatted output
+        a = f'🏠 {location} :: UTC {utc} :: Lat {LAT} Lon {LON} :: {staticon} {desc} '
+        b = f'| 🌡 Barometric {atmos}hPa | Dew Point {dp}°C | ☁ Cloud cover {cloud}{percent_sign} '
+        c = f'| {precipico} Precip {precip}mmh | 💦 Humidity {humid}{percent_sign} | Current {temp}°C '
+        d = f'| Feels like {feelslike}°C | 🍃 Wind {wind}Km/H {arrow} '
+        e = f'| 💨 Gust {gust}Km/H | 👁 Visibility {vis}Km | {uvicon} UVI {uvi} '
+        f = f'| {day1name}: {day1weather} Max {day1highC}°C Min {day1lowC}°C | {day2name}: {day2weather} Max {day2highC}°C Min {day2lowC}°C.'
+
+        s = ''
+        seq = [a, b, c, d, e, f]
+        return((s.join(seq)))
+
+    @staticmethod
+    def _format_uvi_icon(self, uvi):
+        """
+        Diplays a coloured icon relevant to the UV Index meter.
+        Low: Green Moderate: Yellow High: Orange Very Hight: Red
+        Extreme: Violet 🥵
+        """
+        ico = float(uvi)
+        if ico >= 0 and ico <= 2.9:
+            icon = '🟢'
+        elif ico >= 2 and ico <= 5.9:
+            icon = '🟡'
+        elif ico >= 5 and ico <= 7.9:
+            icon = '🟠'
+        elif ico >= 7 and ico <= 10.9:
+            icon = '🔴'
+        else:
+            icon = '🟣'
+        return icon
+
+    @staticmethod
+    def _get_status_icon(self, code):
+        """Use the given code to display appropriate
+        weather status icon"""
+        switcher = {
+            '01d': '☀',
+            '01n': '🌚',
+            '02d': '🌤',
+            '02n': '🌚',
+            '03d': '☁',
+            '03n': '🌚',
+            '04d': '☁',
+            '04n': '🌚',
+            '09d': '🌦',
+            '09n': '🌚',
+            '10d': '🌦',
+            '10n': '🌚',
+            '11d': '⛈',
+            '11n': '⛈',
+            '13d': '❄',
+            '13n': '❄',
+            '50d': '🌫',
+            '50n': '🌫',
+        }
+        return switcher.get(code, '🤷')
+
+    @staticmethod
+    def _get_wind_direction(self, degrees):
+        """Calculate wind direction"""
+        num = degrees
+        val = int((num/22.5)+.5)
+        # Decorated output
+        arr = ['↑ N', 'NNE', '↗ NE', 'ENE', '→ E', 'ESE', '↘ SE', 'SSE', '↓ S', 'SSW', '↙ SW',
+               'WSW', '← W', 'WNW', '↖ NW', 'NNW']
+        return arr[(val % 16)]
+
+    def osm_geocode(self, location):
+        """Credit: James Lu <james@overdrivenetworks.com>"""
+        location = location.lower()
+        uri = f'https://nominatim.openstreetmap.org/search/{location}?format=jsonv2&\
+                accept-language="en"'
+        # User agent and caching are required
+        try:
+            if CachedSession is not None:
+                session = CachedSession('weather', backend='sqlite',
+                            expire_after=180)
+                req = session.get(uri, headers=headers)
+            else:
+                req = requests.get(uri, headers=headers)
+            data = req.json()
+        except HTTPError as e:
+            log.debug('Weather: error %s searching for %r from OSM/Nominatim:',
+                      e, location, exc_info=True)
+            data = None
+        if not data:
+            raise callbacks.Error(
+                "Unknown location %r from OSM/Nominatim" % location)
+        data = data[0]
+        # Limit location verbosity to 3 divisions (e.g. City, Province/State, Country)
+        display_name = data['display_name']
+        display_name_parts = display_name.split(', ')
+        if len(display_name_parts) > 3:
+            # Try to remove ZIP code-like divisions
+            if display_name_parts[-2].isdigit():
+                display_name_parts.pop(-2)
+            display_name = ', '.join(
+                [display_name_parts[0]] + display_name_parts[-2:])
+
+        lat = data['lat']
+        lon = data['lon']
+
+        try:
+            osm_id = data['osm_id']
+        except KeyError:
+            osm_id = ''
+        return (lat, lon, display_name, osm_id, 'OSM/Nominatim')
+
+    def owm_weather(self, location):
+        """OpenWeatherMap API"""
+        location = location.lower()
+        pass
+
+    @staticmethod
+    def _query_location(self, location):
+        numbers = re.findall('[0-9]+', location)
+        # return True if numbers else False
+        if numbers:
+            code = location.split(',', 1)[0]
+            try:
+                country = re.sub('[ ]', '', location.split(',', 1)[1])
+            except IndexError:
+                raise callbacks.Error(_('<postcode, country code>'))
+        return
+
+    @wrap(['text'])
+    def weather(self, irc, msg, args, location):
+        """[<city> <country code>] ][<postcode, country code>]
+        Get weather information for a town or city.
+        I.E. weather Ballarat or Ballarat AU OR 3350, AU
+        """
+        location = location.lower()
+        channel = msg.channel
+
+        apikey = self.registryValue('openweatherAPI')
+        # Missing API Key.
+        if not apikey:
+            raise callbacks.Error(_(
+                'Please configure the OpenWeatherMap API key in config plugins.Weather.openweatherAPI'))
+
+        # Not 'enabled' in #channel.
+        if not self.registryValue('enable', channel):
+            return
+
+        # Check for a postcode
+        self._query_location(self, location)
+
+        # Get details from OSM/Nominatim
+        (latitude, longitude, location, id, text) = self.osm_geocode(location)
+        # Get the weather data
+        try:
+            params = {
+                'lat': latitude,
+                'lon': longitude,
+                'appid': apikey,
+                'units': 'metric',
+                'exclude': 'minutely'
+            }
+            # Base URI for Openweathermap
+            base_uri = ('http://api.openweathermap.org')
+            url = f'{base_uri}/data/2.5/onecall?'
+            Weather = requests.get(url, params, headers=headers)
+
+            # Is HTTP Status OK?
+            if Weather:
+                weather = Weather.json()
+                # Print weather details and forecast(s)
+                irc.reply(self.format_weather_output(location, weather))
+            else:
+                raise callbacks.Error(
+                    _(f'{Weather} in the HTTP request'))
+        except NameError:
+            raise callbacks.Error('418: I\'m a teapot')
+
+    @wrap(['text'])
+    def lookup(self, irc, msg, args, location):
+        """<location>"""
+        location = location.lower()
+        (lat, lon, display_name, osm_id, text) = self.osm_geocode(location)
+        irc.reply(f'{text}: {display_name} [ID: {osm_id}] {lat},{lon}')
+
+    @wrap(['something'])
+    def help(self, irc):
+        """No help for you as yet """
+
+Class = Weather
+
+# vim:set shiftwidth=4 softtabstop=4 expandtab textwidth=79:
