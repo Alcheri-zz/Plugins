@@ -28,6 +28,7 @@ Using:
 =====
 
 [prefix/nick] weather [<city> <(Alpha-2) country code>] [<postcode, (Alpha-2) country code>]
+ 
 [prefix/nick] lookup  [<city> <(Alpha-2) country code>]
 
 **Note:** [prefix] may be set via 'config reply.whenAddressedBy.chars'
