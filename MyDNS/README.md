@@ -12,10 +12,10 @@ Unload the Internet plugin as it conflicts with this plugin:
 
 Configure your bot:
 
-* '/msg yourbot load mydns'
-* '/msg yourbot `config plugins.MyDNS.ipstackAPI your_key_here`'
-* '/msg yourbot unload Internet'
-* '/msg yourbot config channel #channel plugins.MyDNS.enable True or False (or On or Off)'
+* /msg yourbot load mydns
+* /msg yourbot `config plugins.MyDNS.ipstackAPI your_key_here`
+* /msg yourbot unload Internet
+* /msg yourbot `config channel #channel plugins.MyDNS.enable True or False` (On or Off)
 
 Setting up:
 ==========
@@ -27,4 +27,4 @@ Using:
 
 [prefix/nick] dns <hostname | URL | nick | IPv4 or IPv6>
 
-**Note:** [prefix] may be set via 'config reply.whenAddressedBy.chars'
+**Note:** [prefix] may be set via `config reply.whenAddressedBy.chars`
