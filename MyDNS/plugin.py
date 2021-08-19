@@ -23,12 +23,11 @@ try:
 except ImportError:
     # Placeholder that allows to run the plugin on a bot
     # without the i18n module
-    def _(x): return x
+    _ = lambda x: x
 
     ###############
     #  FUNCTIONS  #
     ###############
-
 
 def is_ip(s):
     """Returns whether or not a given string is an IP address.
@@ -40,7 +39,6 @@ def is_ip(s):
     except ValueError:
         # print(f'address/netmask is invalid: {s}')
         return False
-
 
 class MyDNS(callbacks.Plugin):
     """An alternative to Supybot's DNS function.
@@ -72,13 +70,8 @@ class MyDNS(callbacks.Plugin):
         Returns the ip of <hostname | Nick | URL | ip or IPv6> or the reverse
         DNS hostname of <ip> using Python's socket library
         """
-        channel = msg.channel
-        if not channel:
-            return
-        if not self.registryValue('ipstackAPI'):
-            irc.error(
-                "Error: You must set an ipstack API key to use this plugin.")
-            return
+        channel = msg.args[0]
+
         # Check if we should be 'disabled' in a channel.
         # config channel #channel plugins.mydns.enable True or False (or On or Off)
         if self.registryValue('enable', channel):
@@ -88,8 +81,7 @@ class MyDNS(callbacks.Plugin):
                 nick = address
                 try:
                     userHostmask = irc.state.nickToHostmask(nick)
-                    # Returns the nick and host of a user hostmask.
-                    (nick, _, host) = utils.splitHostmask(userHostmask)
+                    (nick, _, host) = utils.splitHostmask(userHostmask)  # Returns the nick and host of a user hostmask.
                     irc.reply(self._gethostbyaddr(host), prefixNick=False)
                 except KeyError:
                     irc.reply(f"[{nick}] is unknown.", prefixNick=False)
@@ -113,8 +105,8 @@ class MyDNS(callbacks.Plugin):
             result = socket.getaddrinfo(host, None)
         except OSError as err:  # Catch failed address lookup.
             return (f'OS error: {err}')
-        except:
-            return 'There was an error.'
+        except Exception as e:
+            return '%r There was an error. % e'
 
         ipaddress = result[0][4][0]
         geoip = self._geoip(ipaddress)
@@ -144,7 +136,7 @@ class MyDNS(callbacks.Plugin):
         """Search for the geolocation of IP addresses.
         Accuracy not guaranteed.
         """
-        apikey = self.registryValue('apikeys.ipstack')
+        apikey = self.registryValue('ipstackAPI')
 
         if not apikey:
             raise Exception('No API key defined')
@@ -162,19 +154,19 @@ class MyDNS(callbacks.Plugin):
         else:
             data = json.loads(response)
 
-        _city = 'City:%s ' % data['city'] if data['city'] else ''
-        _state = 'State:%s ' % data['region_name'] if data['region_name'] else ''
+        _city    = 'City:%s ' % data['city'] if data['city'] else ''
+        _state   = 'State:%s ' % data['region_name'] if data['region_name'] else ''
         #_tmz     = 'TMZ:%s ' % data['time_zone'] if data['time_zone'] else ''
-        _long = 'Long:%s ' % data['longitude'] if data['longitude'] else ''
-        _lat = 'Lat:%s ' % data['latitude'] if data['latitude'] else ''
-        _code = 'Country Code:%s ' % data['country_code'] if data['country_code'] else ''
+        _long    = 'Long:%s ' % data['longitude'] if data['longitude'] else ''
+        _lat     = 'Lat:%s ' % data['latitude'] if data['latitude'] else ''
+        _code    = 'Country Code:%s ' % data['country_code'] if data['country_code'] else ''
         _country = 'Country:%s ' % data['country_name'] if data['country_name'] else ''
-        _zip = 'Post/Zip Code:%s' % data['zip'] if data['zip'] else ''
+        _zip     = 'Post/Zip Code:%s' % data['zip'] if data['zip'] else ''
 
         s = ''
         seq = [_city, _state, _long, _lat, _code, _country, _zip]
 
-        return (s.join(seq))
+        return (s.join( seq ))
 
     def _isnick(self, nick):
         """ Checks to see if a nickname `nick` is valid.
@@ -193,7 +185,6 @@ class MyDNS(callbacks.Plugin):
     def _teal(self, string):
         """Return a teal coloured string."""
         return utils.bold(utils.mircColor(string, 'teal'))
-
 
 Class = MyDNS
 
