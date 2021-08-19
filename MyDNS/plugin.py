@@ -1,5 +1,5 @@
 ##
-# Copyright (c) 2016 - 2020, Barry Suridge
+# Copyright (c) 2016 - 2021, Barry Suridge
 # All rights reserved.
 #
 #
@@ -29,6 +29,20 @@ except ImportError:
     #  FUNCTIONS  #
     ###############
 
+def isnick(nick):
+    """ Checks to see if a nickname `nick` is valid.
+    According to :rfc:`2812 #section-2.3.1`, section 2.3.1, a nickname must start
+    with either a letter or one of the allowed special characters, and after
+    that it may consist of any combination of letters, numbers, or allowed
+    special characters.
+    """
+    if not nick[0].isalpha() and nick[0] not in self._special_chars:
+        return False
+    for char in nick[1:]:
+        if not char.isalnum() and char not in self._special_chars:
+            return False
+    return True
+
 def is_ip(s):
     """Returns whether or not a given string is an IP address.
     """
@@ -39,6 +53,10 @@ def is_ip(s):
     except ValueError:
         # print(f'address/netmask is invalid: {s}')
         return False
+
+def teal(string):
+    """Return a teal coloured string."""
+    return utils.bold(utils.mircColor(string, 'teal'))
 
 class MyDNS(callbacks.Plugin):
     """An alternative to Supybot's DNS function.
@@ -76,13 +94,13 @@ class MyDNS(callbacks.Plugin):
         # config channel #channel plugins.mydns.enable True or False (or On or Off)
         if self.registryValue('enable', channel):
             if is_ip(address):
-                irc.reply(self._gethostbyaddr(address), prefixNick=False)
-            elif self._isnick(address):  # Valid nick?
+                irc.reply(self.gethostbyaddr(address), prefixNick=False)
+            elif isnick(address):  # Valid nick?
                 nick = address
                 try:
                     userHostmask = irc.state.nickToHostmask(nick)
                     (nick, _, host) = utils.splitHostmask(userHostmask)  # Returns the nick and host of a user hostmask.
-                    irc.reply(self._gethostbyaddr(host), prefixNick=False)
+                    irc.reply(self.gethostbyaddr(host), prefixNick=False)
                 except KeyError:
                     irc.reply(f"[{nick}] is unknown.", prefixNick=False)
             else:  # Neither IP or IRC user nick.
@@ -92,6 +110,7 @@ class MyDNS(callbacks.Plugin):
 
     dns = wrap(dns, ['something'])
 
+    @staticmethod
     def _getaddrinfo(self, host):
         """Get host information. Use returned IP address
         to find the (approximate) geolocation of the host.
@@ -105,34 +124,34 @@ class MyDNS(callbacks.Plugin):
             result = socket.getaddrinfo(host, None)
         except OSError as err:  # Catch failed address lookup.
             return (f'OS error: {err}')
-        except Exception as e:
-            return '%r There was an error. % e'
+        except IOError as err:
+            return '%r There was an error.' % err
 
         ipaddress = result[0][4][0]
-        geoip = self._geoip(ipaddress)
+        geoip = self.geoip(ipaddress)
 
-        dns = self._teal('DNS: ')
-        loc = self._teal('LOC: ')
+        dns = teal('DNS: ')
+        loc = teal('LOC: ')
 
         return (f'{dns}{host} resolves to [{ipaddress}] {loc}{geoip}')
 
-    def _gethostbyaddr(self, ip):
+    def gethostbyaddr(self, ip):
         """Do a reverse lookup for ip.
         """
         try:
             (hostname, _, address) = socket.gethostbyaddr(ip)
             hostname = hostname + ' <> ' + address[0]
-            geoip = self._geoip(address[0])
+            geoip = self.geoip(address[0])
             shortname = hostname.split('.')[0]
-            dns = self._teal('DNS:')
-            loc = self._teal('LOC:')
+            dns = teal('DNS:')
+            loc = teal('LOC:')
             return (f'{dns} <{shortname}> [{hostname}] {loc} {geoip}')
         except OSError as err:  # Catch address-related errors.
             return (f'OS error: {err}')
-        except:
-            return 'There was an error.'
+        except IOError as err:
+            return '%r There was an error.' % err
 
-    def _geoip(self, address):
+    def geoip(self, address):
         """Search for the geolocation of IP addresses.
         Accuracy not guaranteed.
         """
@@ -167,24 +186,6 @@ class MyDNS(callbacks.Plugin):
         seq = [_city, _state, _long, _lat, _code, _country, _zip]
 
         return (s.join( seq ))
-
-    def _isnick(self, nick):
-        """ Checks to see if a nickname `nick` is valid.
-        According to :rfc:`2812 #section-2.3.1`, section 2.3.1, a nickname must start
-        with either a letter or one of the allowed special characters, and after
-        that it may consist of any combination of letters, numbers, or allowed
-        special characters.
-        """
-        if not nick[0].isalpha() and nick[0] not in self._special_chars:
-            return False
-        for char in nick[1:]:
-            if not char.isalnum() and char not in self._special_chars:
-                return False
-        return True
-
-    def _teal(self, string):
-        """Return a teal coloured string."""
-        return utils.bold(utils.mircColor(string, 'teal'))
 
 Class = MyDNS
 
