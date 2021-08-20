@@ -7,6 +7,7 @@
 
 import json    # JavaScript Object Notation
 import socket  # Low-level networking interface
+import re      # special text string used for describing a search pattern
 # For Python 3.3 and later
 from urllib.parse import urlparse
 from urllib.request import urlopen
@@ -29,17 +30,28 @@ except ImportError:
     #  FUNCTIONS  #
     ###############
 
-def isnick(nick):
+special_chars = (
+    '-',
+    '[',
+    ']',
+    '\\',
+    '`',
+    '^',
+    '{',
+    '}',
+    '_')
+
+def is_nick(nick):
     """ Checks to see if a nickname `nick` is valid.
     According to :rfc:`2812 #section-2.3.1`, section 2.3.1, a nickname must start
     with either a letter or one of the allowed special characters, and after
     that it may consist of any combination of letters, numbers, or allowed
     special characters.
     """
-    if not nick[0].isalpha() and nick[0] not in self._special_chars:
+    if not nick[0].isalpha() and nick[0] not in special_chars:
         return False
     for char in nick[1:]:
-        if not char.isalnum() and char not in self._special_chars:
+        if not char.isalnum() and char not in special_chars:
             return False
     return True
 
@@ -65,23 +77,13 @@ class MyDNS(callbacks.Plugin):
     def __init__(self, irc):
         super().__init__(irc)
 
-        self._special_chars = (
-            '-',
-            '[',
-            ']',
-            '\\',
-            '`',
-            '^',
-            '{',
-            '}',
-            '_')
-
     threaded = True
 
     ##############
     #    MAIN    #
     ##############
 
+    @wrap(['text'])
     def dns(self, irc, msg, args, address):
         """<hostname | Nick | URL | IPv4 or IPv6>
         An alternative to Supybot's DNS function.
@@ -95,7 +97,7 @@ class MyDNS(callbacks.Plugin):
         if self.registryValue('enable', channel):
             if is_ip(address):
                 irc.reply(self.gethostbyaddr(address), prefixNick=False)
-            elif isnick(address):  # Valid nick?
+            elif is_nick(address):  # Valid nick?
                 nick = address
                 try:
                     userHostmask = irc.state.nickToHostmask(nick)
@@ -104,17 +106,15 @@ class MyDNS(callbacks.Plugin):
                 except KeyError:
                     irc.reply(f"[{nick}] is unknown.", prefixNick=False)
             else:  # Neither IP or IRC user nick.
-                irc.reply(self._getaddrinfo(address), prefixNick=False)
+                irc.reply(self.getaddrinfo(address), prefixNick=False)
         else:
             return
 
-    dns = wrap(dns, ['something'])
-
-    @staticmethod
-    def _getaddrinfo(self, host):
+    def getaddrinfo(self, host):
         """Get host information. Use returned IP address
         to find the (approximate) geolocation of the host.
         """
+        host = host.lower()
         d = urlparse(host)
 
         if d.scheme:
@@ -158,7 +158,8 @@ class MyDNS(callbacks.Plugin):
         apikey = self.registryValue('ipstackAPI')
 
         if not apikey:
-            raise Exception('No API key defined')
+            raise callbacks.Error(_( \
+                'Please configure the ipstack API key in config plugins.MyDNS.ipstackAPI'))
 
         try:
             url = 'http://api.ipstack.com/' + address + '?access_key=' + apikey
