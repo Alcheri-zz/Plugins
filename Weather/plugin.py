@@ -32,12 +32,6 @@ import requests
 import math
 from datetime import datetime
 from requests.models import HTTPError
-try:
-    from requests_cache import CachedSession
-except ImportError:
-    CachedSession = None
-    raise callbacks.Error(
-        _('requests_cache is not installed; caching disabled.'))
 from time import sleep
 
 from supybot.commands import *
@@ -48,7 +42,12 @@ try:
 except ImportError:
     # Placeholder that allows to run the plugin on a bot
     # without the i18n module
-    def _(x): return x
+    _ = lambda x: x
+try:
+    from requests_cache import CachedSession
+except ImportError:
+    CachedSession = None
+    raise callbacks.Error(_('requests_cache is not installed; caching disabled.'))
 
 # Unicode symbol (https://en.wikipedia.org/wiki/List_of_Unicode_characters#Latin-1_Supplement)
 apostrophe = u'\N{APOSTROPHE}'
@@ -114,16 +113,16 @@ class Weather(callbacks.Plugin):
 
     def format_weather_output(self, location, data):
         """Gather all the data - format it"""
-        current = data['current']
-        icon = current['weather'][0].get('icon')
-        staticon = self._get_status_icon(self, icon)
+        current    = data['current']
+        icon       = current['weather'][0].get('icon')
+        staticon   = self._get_status_icon(self, icon)
         (LON, LAT) = dd2dms(data['lon'], data['lat'])
         # current
-        cloud = current['clouds']
-        arrow = self._get_wind_direction(self, current['wind_deg'])
+        cloud     = current['clouds']
+        arrow     = self._get_wind_direction(self, current['wind_deg'])
         feelslike = round(current['feels_like'])
-        humid = current['humidity']
-        atmos = current['pressure']
+        humid     = current['humidity']
+        atmos     = current['pressure']
         dp = round(current['dew_point'])
         try:
             precip = data['hourly'][0]['rain'].get('1h')
@@ -131,31 +130,31 @@ class Weather(callbacks.Plugin):
         except KeyError:
             precip = 0
             precipico = ''
-        temp = round(current['temp'])
-        vis = (current['visibility'] / 1000)
-        uvi = round(current['uvi'])
+        temp   = round(current['temp'])
+        vis    = (current['visibility'] / 1000)
+        uvi    = round(current['uvi'])
         uvicon = self._format_uvi_icon(self, uvi)
-        utc = (data['timezone_offset']/3600)
+        utc    = (data['timezone_offset']/3600)
         # weather
-        desc = current['weather'][0].get('description')
-        wind = round(current['wind_speed'])
+        desc   = current['weather'][0].get('description')
+        wind   = round(current['wind_speed'])
         try:
             gust = round(current['wind_gust'])
         except KeyError:
             gust = 0
         # Forecast day one
-        day1 = data['daily'][1]
-        day1name = datetime.fromtimestamp(day1['dt']).strftime('%A')
+        day1        = data['daily'][1]
+        day1name    = datetime.fromtimestamp(day1['dt']).strftime('%A')
         day1weather = day1['weather'][0].get('description')
-        day1highC = round(day1['temp'].get('max'))
-        day1lowC = round(day1['temp'].get('min'))
+        day1highC   = round(day1['temp'].get('max'))
+        day1lowC    = round(day1['temp'].get('min'))
 
         # Forecast day two
-        day2 = data['daily'][2]
-        day2name = datetime.fromtimestamp(day2['dt']).strftime('%A')
+        day2        = data['daily'][2]
+        day2name    = datetime.fromtimestamp(day2['dt']).strftime('%A')
         day2weather = day2['weather'][0].get('description')
-        day2highC = round(day2['temp'].get('max'))
-        day2lowC = round(day2['temp'].get('min'))
+        day2highC   = round(day2['temp'].get('max'))
+        day2lowC    = round(day2['temp'].get('min'))
 
         # Formatted output
         a = f'🏠 {location} :: UTC {utc} :: Lat {LAT} Lon {LON} :: {staticon} {desc} '
@@ -245,8 +244,8 @@ class Weather(callbacks.Plugin):
                       e, location, exc_info=True)
             data = None
         if not data:
-            raise callbacks.Error(
-                "Unknown location %r from OSM/Nominatim" % location)
+            raise callbacks.Error(_(
+                "Unknown location %r from OSM/Nominatim" % location))
         data = data[0]
         # Limit location verbosity to 3 divisions (e.g. City, Province/State, Country)
         display_name = data['display_name']
@@ -328,8 +327,7 @@ class Weather(callbacks.Plugin):
                 # Print weather details and forecast(s)
                 irc.reply(self.format_weather_output(location, weather))
             else:
-                raise callbacks.Error(
-                    _(f'{Weather} in the HTTP request'))
+                raise callbacks.Error(_(f'{Weather} in the HTTP request'))
         except NameError:
             raise callbacks.Error('418: I\'m a teapot')
 
