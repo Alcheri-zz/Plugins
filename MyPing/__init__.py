@@ -1,5 +1,5 @@
 ###
-# Copyright (c) 2020, Barry Suridge
+# Copyright (c) 2021, Barry Suridge
 # All rights reserved.
 #
 #
@@ -10,9 +10,9 @@ MyPing: An alternative to Supybot's Ping function.
 """
 
 import sys
-# Python 3 ONLY!!
-if sys.version_info[0] < 3:
-    raise RuntimeError("This plugin requires Python 3.")
+# Python 3.3 an above ONLY!!
+if sys.version_info <= (3, 3):
+    raise RuntimeError("This plugin requires Python 3.3 or above.")
 
 import supybot
 import supybot.world as world
