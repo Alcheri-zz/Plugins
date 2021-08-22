@@ -1,5 +1,5 @@
 ###
-# Copyright (c) 2004, Jeremiah Fincher
+# Copyright (c) 2021, Barry Suridge
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -25,17 +25,17 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+
 ###
 
-import supybot.conf as conf
-import supybot.registry as registry
+from supybot import conf, registry
 try:
     from supybot.i18n import PluginInternationalization
-    _ = PluginInternationalization('MyPing')
-except ImportError:
+    _ = PluginInternationalization('Weather')
+except:
     # Placeholder that allows to run the plugin on a bot
     # without the i18n module
-    _ = lambda x:x
+    _ = lambda x: x
 
 def configure(advanced):
     # This will be called by supybot to configure this module.  advanced is
@@ -43,14 +43,27 @@ def configure(advanced):
     # user or not.  You should effect your configuration by manipulating the
     # registry as appropriate.
     from supybot.questions import expect, anything, something, yn
-    conf.registerPlugin('MyPing', True)
+    conf.registerPlugin('Weatherstack', True)
 
 
-MyPing = conf.registerPlugin('MyPing')
+Weatherstack = conf.registerPlugin('Weatherstack')
 # This is where your configuration variables (if any) should go.  For example:
-# conf.registerGlobalValue(MyPing, 'someConfigVariableName',
+# conf.registerGlobalValue(DALnet, 'someConfigVariableName',
 #     registry.Boolean(False, _("""Help for someConfigVariableName.""")))
-conf.registerChannelValue(MyPing, 'enable',
-    registry.Boolean(False, """Should plugin work in this channel?"""))
 
-# vim:set shiftwidth=4 softtabstop=4 expandtab textwidth=79:
+conf.registerGroup(Weatherstack, 'apikeys')
+
+conf.registerGlobalValue(
+    Weatherstack, 'weatherstackAPI', registry.String(
+        '', _("""Sets the API key for Weatherstack."""), private=True)
+)
+conf.registerGlobalValue(
+    Weatherstack, 'positionstackAPI', registry.String(
+        '', _("""Sets the API key for positionstack."""), private=True)
+)
+conf.registerChannelValue(
+    Weatherstack, 'enable', registry.Boolean(
+        False, """Should plugin work in this channel?""")
+)
+
+# vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:

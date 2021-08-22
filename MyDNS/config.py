@@ -14,7 +14,7 @@ try:
 except:
     # Placeholder that allows to run the plugin on a bot
     # without the i18n module
-    def _(x): return x
+    _ = lambda x: x
 
 
 def configure(advanced):
