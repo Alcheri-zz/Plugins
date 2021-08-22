@@ -35,14 +35,8 @@ from requests.models import HTTPError
 from time import sleep
 
 from supybot.commands import *
-from supybot import utils, plugins, ircutils, ircmsgs, callbacks, log
-try:
-    from supybot.i18n import PluginInternationalization
-    _ = PluginInternationalization('Weather')
-except ImportError:
-    # Placeholder that allows to run the plugin on a bot
-    # without the i18n module
-    _ = lambda x: x
+from supybot import callbacks, log
+
 try:
     from requests_cache import CachedSession
 except ImportError:
@@ -161,7 +155,7 @@ class Weather(callbacks.Plugin):
         b = f'| 🌡 Barometric {atmos}hPa | Dew Point {dp}°C | ☁ Cloud cover {cloud}{percent_sign} '
         c = f'| {precipico} Precip {precip}mmh | 💦 Humidity {humid}{percent_sign} | Current {temp}°C '
         d = f'| Feels like {feelslike}°C | 🍃 Wind {wind}Km/H {arrow} '
-        e = f'| 💨 Gust {gust}Km/H | 👁 Visibility {vis}Km | {uvicon} UVI {uvi} '
+        e = f'| 💨 Gust {gust}m/s | 👁 Visibility {vis}Km | {uvicon} UVI {uvi} '
         f = f'| {day1name}: {day1weather} Max {day1highC}°C Min {day1lowC}°C | {day2name}: {day2weather} Max {day2highC}°C Min {day2lowC}°C.'
 
         s = ''

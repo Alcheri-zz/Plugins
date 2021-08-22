@@ -1,5 +1,5 @@
 ###
-# Copyright (c) 2016 - 2020, Barry Suridge
+# Copyright (c) 2016 - 2021, Barry Suridge
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,7 +27,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 ###
-import sys
 import shlex
 import subprocess
 
@@ -37,17 +36,36 @@ from supybot.commands import *
 import supybot.plugins as plugins
 import supybot.ircutils as utils
 import supybot.callbacks as callbacks
-try:
-    from supybot.i18n import PluginInternationalization
-    _ = PluginInternationalization('MyPing')
-except ImportError:
-    # Placeholder that allows to run the plugin on a bot
-    # without the i18n module
-    _ = lambda x:x
 
     ###############
     #  FUNCTIONS  #
     ###############
+
+special_chars = (
+    '-',
+    '[',
+    ']',
+    '\\',
+    '`',
+    '^',
+    '{',
+    '}',
+    '_')
+
+def is_nick(nick):
+    """ Checks to see if a nickname `nick` is valid.
+    According to :rfc:`2812 #section-2.3.1`, section 2.3.1, a nickname must start
+    with either a letter or one of the allowed special characters, and after
+    that it may consist of any combination of letters, numbers, or allowed
+    special characters.
+    """
+    if not nick[0].isalpha() and nick[0] not in special_chars:
+        return False
+    for char in nick[1:]:
+        if not char.isalnum() and char not in special_chars:
+            return False
+    return True
+
 def teal(string):
     """Return a bolded teal coloured string.
     """
@@ -64,7 +82,7 @@ def GetMatch(output):
     """
     lines = output.split("\n")
     loss = lines[-2].split(',')[2].split()[0]
-    timing = lines[-1].split()[3].split('/')	
+    timing = lines[-1].split()[3].split('/')
     elapsed = int(float(timing[1]))
     time = divmod(elapsed,1000.0)
 
@@ -73,33 +91,24 @@ def GetMatch(output):
 class MyPing(callbacks.Plugin):
 
     def __init__(self, irc):
-		
+
         self.__parent = super(MyPing, self)
         self.__parent.__init__(irc)
-        self._special_chars = (
-            '-',
-            '[',
-            ']',
-            '\\',
-            '`',
-            '^',
-            '{',
-            '}',
-            '_')
 
     threaded = True
 
-    def pINGS(self, irc, msg, args, host):
+    @wrap(['something'])
+    def pings(self, irc, msg, args, host):
         """<hostmask> | Nick | IPv4 or IPv6>
         An alternative to Supybot's PING function.
-        """		
+        """
         channel = msg.args[0]
 
         # Check if we should be 'disabled' in a channel.
         # config channel #channel plugins.myping.enable True or False (or On or Off)
         if not self.registryValue('enable', channel):
             return
-        if self.isNick(host):  # Valid nick?
+        if is_nick(host):  # Valid nick?
             nick = host
             try:
                 userHostmask = irc.state.nickToHostmask(nick)
@@ -107,7 +116,7 @@ class MyPing(callbacks.Plugin):
                 (nick, _, host) = utils.splitHostmask(userHostmask)
             except KeyError:
                 pass
-        cmd = shlex.split(f'ping -c 1 -W 1 {host}')     
+        cmd = shlex.split(f'ping -c 1 -W 1 {host}')
         try:
             output = subprocess.check_output(cmd).decode().strip()
             elapsed_loss = GetMatch(output)
@@ -117,22 +126,4 @@ class MyPing(callbacks.Plugin):
         else:
             irc.reply(f'{red(cmd[-1])} is Reachable ~ {elapsed_loss}', prefixNick=False)
 
-    pings = wrap(pINGS, ['something'])
-
-    def isNick(self, nick):
-        """ Checks to see if a nickname `nick` is valid.
-        According to :rfc:`2812 #section-2.3.1`, section 2.3.1, a nickname must start
-        with either a letter or one of the allowed special characters, and after
-        that it may consist of any combination of letters, numbers, or allowed
-        special characters.
-        """
-        if not nick[0].isalpha() and nick[0] not in self._special_chars:
-            return False
-        for char in nick[1:]:
-            if not char.isalnum() and char not in self._special_chars:
-                return False
-        return True
-
 Class = MyPing
-
-# vim:set shiftwidth=4 softtabstop=4 expandtab textwidth=79:
