@@ -137,10 +137,8 @@ class MyDNS(callbacks.Plugin):
 
         try:
             result = socket.getaddrinfo(host, None)
-        except socket.gaierror as err:  # Catch failed address lookup.
+        except socket.error as err:  # Catch failed address lookup.
             return (f'Could not resolve {host}: {err}')
-        except socket.herror as err:
-            return (f'{err}')
 
         ipaddress = result[0][4][0]
         geoip = self.geoip(ipaddress)
@@ -161,10 +159,8 @@ class MyDNS(callbacks.Plugin):
             dns = teal('DNS:')
             loc = teal('LOC:')
             return (f'{dns} <{shortname}> [{hostname}] {loc} {geoip}')
-        except socket.gaierror as err:  # Catch failed address lookup.
+        except socket.error as err:  # Catch failed address lookup.
             return (f'Could not resolve {ip}: {err}')
-        except socket.herror as err:
-            return (f'{err}')
 
     def geoip(self, address):
         """Search for the geolocation of IP addresses.
@@ -202,10 +198,13 @@ class MyDNS(callbacks.Plugin):
         flag    = data['location']['country_flag_emoji']
         zip     = ' Post/Zip Code:%s' % data['zip'] if data['zip'] else ''
 
-        s = ''
-        seq = [city, state, long, lat, code, country, flag, zip]
+        try:
+            s = ''
+            seq = [city, state, long, lat, code, country, flag, zip]
 
-        return (s.join( seq ))
+            return (s.join( seq ))
+        except TypeError:
+            print(f'Could not resolve {address}')
 
 Class = MyDNS
 
