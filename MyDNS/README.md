@@ -20,7 +20,8 @@ Configure your bot:
 Setting up:
 ==========
 
-* No Required external Python libraries.
+* This plugin uses Python's HTTP client. If not already installed run the following from the plugins/MyDNS folder.
+* `pip install -r requirements.txt` 
 
 Using:
 =====
