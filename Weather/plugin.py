@@ -109,11 +109,11 @@ class Weather(callbacks.Plugin):
         """Gather all the data - format it"""
         current    = data['current']
         icon       = current['weather'][0].get('icon')
-        staticon   = self._get_status_icon(self, icon)
+        staticon   = self._get_status_icon(icon)
         (LON, LAT) = dd2dms(data['lon'], data['lat'])
         # current
         cloud     = current['clouds']
-        arrow     = self._get_wind_direction(self, current['wind_deg'])
+        arrow     = self._get_wind_direction(current['wind_deg'])
         feelslike = round(current['feels_like'])
         humid     = current['humidity']
         atmos     = current['pressure']
@@ -127,7 +127,7 @@ class Weather(callbacks.Plugin):
         temp   = round(current['temp'])
         vis    = (current['visibility'] / 1000)
         uvi    = round(current['uvi'])
-        uvicon = self._format_uvi_icon(self, uvi)
+        uvicon = self._format_uvi_icon(uvi)
         utc    = (data['timezone_offset']/3600)
         # weather
         desc   = current['weather'][0].get('description')
@@ -163,7 +163,7 @@ class Weather(callbacks.Plugin):
         return((s.join(seq)))
 
     @staticmethod
-    def _format_uvi_icon(self, uvi):
+    def _format_uvi_icon(uvi):
         """
         Diplays a coloured icon relevant to the UV Index meter.
         Low: Green Moderate: Yellow High: Orange Very Hight: Red
@@ -183,7 +183,7 @@ class Weather(callbacks.Plugin):
         return icon
 
     @staticmethod
-    def _get_status_icon(self, code):
+    def _get_status_icon(code):
         """Use the given code to display appropriate
         weather status icon"""
         switcher = {
@@ -209,7 +209,7 @@ class Weather(callbacks.Plugin):
         return switcher.get(code, '🤷')
 
     @staticmethod
-    def _get_wind_direction(self, degrees):
+    def _get_wind_direction(degrees):
         """Calculate wind direction"""
         num = degrees
         val = int((num/22.5)+.5)
@@ -265,7 +265,7 @@ class Weather(callbacks.Plugin):
         pass
 
     @staticmethod
-    def _query_location(self, location):
+    def _query_location(location):
         numbers = re.findall('[0-9]+', location)
         # return True if numbers else False
         if numbers:
@@ -296,7 +296,7 @@ class Weather(callbacks.Plugin):
             return
 
         # Check for a postcode
-        self._query_location(self, location)
+        self._query_location(location)
 
         # Get details from OSM/Nominatim
         (latitude, longitude, location, id, text) = self.osm_geocode(location)
