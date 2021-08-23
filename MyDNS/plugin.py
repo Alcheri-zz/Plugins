@@ -170,8 +170,8 @@ class MyDNS(callbacks.Plugin):
         apikey = self.registryValue('ipstackAPI')
 
         if not apikey:
-            raise callbacks.Error(_( \
-                'Please configure the ipstack API key in config plugins.MyDNS.ipstackAPI'))
+            raise callbacks.Error( \
+                'Please configure the ipstack API key in config plugins.MyDNS.ipstackAPI')
 
         try:
             url = 'http://api.ipstack.com/' + address + '?access_key=' + apikey

@@ -33,10 +33,14 @@ import json
 import os
 import math
 from datetime import datetime
+
+from supybot.commands import *
+from supybot import callbacks
+
 try:
     import pgeocode
 except ImportError:
-    raise callbacks.Error(_('pgeocode is not installed. This plugin will not function!'))
+    raise callbacks.Error('pgeocode is not installed. This plugin will not function!')
 
 from supybot import callbacks
 from supybot.commands import *
@@ -215,11 +219,11 @@ def query_postal_code(code):
     try:
         countrycode = re.sub('[ ]', '', code.split(',', 1)[1])
     except IndexError:
-        raise callbacks.Error(_('<postcode, country code>'))
+        raise callbacks.Error('<postcode, country code>')
     try:
         nomi = pgeocode.Nominatim(countrycode)
     except ValueError:
-        raise callbacks.Error(_(f'{countrycode} is not a known country code.'))
+        raise callbacks.Error(f'{countrycode} is not a known country code.')
     zip = nomi.query_postal_code(postcode)
     return[zip.latitude, zip.longitude]
 
@@ -238,8 +242,8 @@ class Weatherstack(callbacks.Plugin):
         apikey = self.registryValue('positionstackAPI')
         # Missing API Key.
         if not apikey:
-            raise callbacks.Error(_( \
-                'Please configure the positionstack API key in config plugins.Weatherstack.positionstackAPI'))
+            raise callbacks.Error( \
+                'Please configure the positionstack API key in config plugins.Weatherstack.positionstackAPI')
         coordinates = f"{latitude}, {longitude}"
         params = {
             'access_key': apikey,
@@ -251,9 +255,9 @@ class Weatherstack(callbacks.Plugin):
         try:
             locality = responses['data'][0].get('locality')
         except KeyError:
-            raise callbacks.Error(_('404: city not found'))
+            raise callbacks.Error('404: city not found')
         if str(locality) == 'None':
-            raise callbacks.Error(_('404: city not found'))
+            raise callbacks.Error('404: city not found')
         return (locality)
 
     @wrap(['text'])
@@ -267,8 +271,8 @@ class Weatherstack(callbacks.Plugin):
         apikey = self.registryValue('weatherstackAPI')
         # Missing API Key.
         if not apikey:
-            raise callbacks.Error(_( \
-                'Please configure the Weatherstack API key in config plugins.Weatherstack.weatherstackAPI'))
+            raise callbacks.Error( \
+                'Please configure the Weatherstack API key in config plugins.Weatherstack.weatherstackAPI')
 
         # Not 'enabled' in #channel.
         if not self.registryValue('enable', channel):
@@ -296,7 +300,7 @@ class Weatherstack(callbacks.Plugin):
             # Print the weather output
             irc.reply(format_weather_output(api_response))
         else:
-            raise callbacks.Error(_(f'{api_result.status_code} in the HTTP request'))
+            raise callbacks.Error(f'{api_result.status_code} in the HTTP request')
 
         # temp weather code collection
         entry = {'status': _status, 'code': _weather_code}

@@ -41,7 +41,7 @@ try:
     from requests_cache import CachedSession
 except ImportError:
     CachedSession = None
-    raise callbacks.Error(_('requests_cache is not installed; caching disabled.'))
+    raise callbacks.Error('requests_cache is not installed; caching disabled.')
 
 # Unicode symbol (https://en.wikipedia.org/wiki/List_of_Unicode_characters#Latin-1_Supplement)
 apostrophe = u'\N{APOSTROPHE}'
@@ -218,8 +218,8 @@ class Weather(callbacks.Plugin):
                'WSW', '← W', 'WNW', '↖ NW', 'NNW']
         return arr[(val % 16)]
 
+    # Credit: https://github.com/jlu5/SupyPlugins/blob/master/NuWeather/plugin.py
     def osm_geocode(self, location):
-        """Credit: James Lu <james@overdrivenetworks.com>"""
         location = location.lower()
         uri = f'https://nominatim.openstreetmap.org/search/{location}?format=jsonv2&\
                 accept-language="en"'
@@ -238,8 +238,7 @@ class Weather(callbacks.Plugin):
                       e, location, exc_info=True)
             data = None
         if not data:
-            raise callbacks.Error(_(
-                "Unknown location %r from OSM/Nominatim" % location))
+            raise callbacks.Error('Unknown location %r from OSM/Nominatim' % location)
         data = data[0]
         # Limit location verbosity to 3 divisions (e.g. City, Province/State, Country)
         display_name = data['display_name']
@@ -274,7 +273,7 @@ class Weather(callbacks.Plugin):
             try:
                 country = re.sub('[ ]', '', location.split(',', 1)[1])
             except IndexError:
-                raise callbacks.Error(_('<postcode, country code>'))
+                raise callbacks.Error('<postcode, country code>')
         return
 
     @wrap(['text'])
@@ -289,8 +288,8 @@ class Weather(callbacks.Plugin):
         apikey = self.registryValue('openweatherAPI')
         # Missing API Key.
         if not apikey:
-            raise callbacks.Error(_(
-                'Please configure the OpenWeatherMap API key in config plugins.Weather.openweatherAPI'))
+            raise callbacks.Error( \
+                'Please configure the OpenWeatherMap API key in config plugins.Weather.openweatherAPI')
 
         # Not 'enabled' in #channel.
         if not self.registryValue('enable', channel):
@@ -321,7 +320,7 @@ class Weather(callbacks.Plugin):
                 # Print weather details and forecast(s)
                 irc.reply(self.format_weather_output(location, weather))
             else:
-                raise callbacks.Error(_(f'{Weather} in the HTTP request'))
+                raise callbacks.Error(f'{Weather} in the HTTP request')
         except NameError:
             raise callbacks.Error('418: I\'m a teapot')
 

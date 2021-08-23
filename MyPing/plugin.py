@@ -33,7 +33,6 @@ import subprocess
 ###
 import supybot.utils as utils
 from supybot.commands import *
-import supybot.plugins as plugins
 import supybot.ircutils as utils
 import supybot.callbacks as callbacks
 

@@ -70,7 +70,7 @@ class OnJoin(callbacks.Plugin):  # pylint: disable=too-many-ancestors
                     pass
             except IOError as err:
                 # Non-fatal error traceback information
-                raise (FileError('failed to open'), err)
+                raise callbacks.Error(FileError('failed to open'), err)
         else:
             return
 
