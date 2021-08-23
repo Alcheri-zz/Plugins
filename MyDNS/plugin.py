@@ -28,10 +28,14 @@
 
 import json    # JavaScript Object Notation
 import socket  # Low-level networking interface
-# For Python 3.3 and later
+#XXX For Python 3.3 and later
+# HTTP client for Python
+import urllib3
+from urllib3.exceptions import HTTPError
+# URL handling module for python
 from urllib.parse import urlparse
-from urllib.request import urlopen
-from urllib.error import URLError
+# Validate and categorize the IP address according to their types
+# (IPv4 or IPv6)
 import ipaddress
 
 from supybot.commands import *
@@ -173,30 +177,34 @@ class MyDNS(callbacks.Plugin):
             raise callbacks.Error( \
                 'Please configure the ipstack API key in config plugins.MyDNS.ipstackAPI')
 
-        try:
-            url = 'http://api.ipstack.com/' + address + '?access_key=' + apikey
-            response = urlopen(url, timeout=1).read().decode('utf8')
-        except URLError as err:
-            if hasattr(err, 'reason'):
-                return (f'We failed to reach a server. Reason: {err.reason}')
-            else:
-                return (f'The server couldn\'t fulfill the request: {err}')
-        except socket.timeout:
-            return (f'Socket timed out - URL {url}')
-        else:
-            data = json.loads(response)
+        # Creating a PoolManager instance for sending requests.
+        http = urllib3.PoolManager()
 
-        _city    = 'City:%s ' % data['city'] if data['city'] else ''
-        _state   = 'State:%s ' % data['region_name'] if data['region_name'] else ''
-        #_tmz     = 'TMZ:%s ' % data['time_zone'] if data['time_zone'] else ''
-        _long    = 'Long:%s ' % data['longitude'] if data['longitude'] else ''
-        _lat     = 'Lat:%s ' % data['latitude'] if data['latitude'] else ''
-        _code    = 'Country Code:%s ' % data['country_code'] if data['country_code'] else ''
-        _country = 'Country:%s ' % data['country_name'] if data['country_name'] else ''
-        _zip     = 'Post/Zip Code:%s' % data['zip'] if data['zip'] else ''
+        # Set the URI
+        uri = 'http://api.ipstack.com/' + address + '?access_key=' + apikey
+
+        # Sending a GET request and getting back response as HTTPResponse object
+        response = http.request("GET", uri, timeout=1)
+
+        # 'OK', 'Request fulfilled, document follows'
+        if response.status != 200:
+            raise HTTPError(
+                'Request failed with status {0}'.format(response.status),
+            )
+        else:
+            data = json.loads(response.data.decode("utf-8"))
+
+        city    = 'City:%s ' % data['city'] if data['city'] else ''
+        state   = 'State:%s ' % data['region_name'] if data['region_name'] else ''
+        long    = 'Long:%s ' % data['longitude'] if data['longitude'] else ''
+        lat     = 'Lat:%s ' % data['latitude'] if data['latitude'] else ''
+        code    = 'Country Code:%s ' % data['country_code'] if data['country_code'] else ''
+        country = 'Country:%s ' % data['country_name'] if data['country_name'] else ''
+        flag    = data['location']['country_flag_emoji']
+        zip     = ' Post/Zip Code:%s' % data['zip'] if data['zip'] else ''
 
         s = ''
-        seq = [_city, _state, _long, _lat, _code, _country, _zip]
+        seq = [city, state, long, lat, code, country, flag, zip]
 
         return (s.join( seq ))
 
