@@ -28,7 +28,7 @@
 
 import json    # JavaScript Object Notation
 import socket  # Low-level networking interface
-#XXX For Python 3.3 and later
+#XXX For Python 3.4 and later
 # HTTP client for Python
 import urllib3
 from urllib3.exceptions import HTTPError
@@ -72,14 +72,13 @@ def is_nick(nick):
     return True
 
 def is_ip(s):
-    """Returns whether or not a given string is an IP address.
+    """Returns whether or not a given string is a
+       valid IPv4 or IPv6 address.
     """
     try:
         ipaddress.ip_address(s)
-        # print(f'{ip} is a correct IP{ip.version} address.')
         return True
     except ValueError:
-        # print(f'address/netmask is invalid: {s}')
         return False
 
 def teal(string):
@@ -138,10 +137,10 @@ class MyDNS(callbacks.Plugin):
 
         try:
             result = socket.getaddrinfo(host, None)
-        except OSError as err:  # Catch failed address lookup.
-            return (f'OS error: {err}')
-        except IOError as err:
-            return '%r There was an error.' % err
+        except socket.gaierror as err:  # Catch failed address lookup.
+            return (f'Could not resolve {host}: {err}')
+        except socket.herror as err:
+            return (f'{err}')
 
         ipaddress = result[0][4][0]
         geoip = self.geoip(ipaddress)
@@ -162,10 +161,10 @@ class MyDNS(callbacks.Plugin):
             dns = teal('DNS:')
             loc = teal('LOC:')
             return (f'{dns} <{shortname}> [{hostname}] {loc} {geoip}')
-        except OSError as err:  # Catch address-related errors.
-            return (f'OS error: {err}')
-        except IOError as err:
-            return '%r There was an error.' % err
+        except socket.gaierror as err:  # Catch failed address lookup.
+            return (f'Could not resolve {ip}: {err}')
+        except socket.herror as err:
+            return (f'{err}')
 
     def geoip(self, address):
         """Search for the geolocation of IP addresses.
