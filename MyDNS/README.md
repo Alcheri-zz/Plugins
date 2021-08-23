@@ -29,3 +29,8 @@ Using:
 [prefix/nick] dns <hostname | URL | nick | IPv4 or IPv6>
 
 **Note:** [prefix] may be set via `config reply.whenAddressedBy.chars`
+
+Example:
+========
+
+DNS: crawl-203-208-60-1.googlebot.com resolves to [203.208.60.1] LOC: City:Beijing State:Beijing Long:116.37922668457031 Lat:39.91175842285156 Country Code:CN Country:China 🇨🇳 Post/Zip Code:100000
