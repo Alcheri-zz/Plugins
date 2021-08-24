@@ -31,7 +31,6 @@ import shlex
 import subprocess
 
 ###
-import supybot.utils as utils
 from supybot.commands import *
 import supybot.ircutils as utils
 import supybot.callbacks as callbacks
