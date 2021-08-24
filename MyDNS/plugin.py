@@ -38,6 +38,9 @@ from urllib.parse import urlparse
 # (IPv4 or IPv6)
 import ipaddress
 
+# mIRC colour codes
+from .local.color import teal
+
 from supybot.commands import *
 import supybot.ircutils as utils
 import supybot.callbacks as callbacks
@@ -80,10 +83,6 @@ def is_ip(s):
         return True
     except ValueError:
         return False
-
-def teal(string):
-    """Return a teal coloured string."""
-    return utils.bold(utils.mircColor(string, 'teal'))
 
 class MyDNS(callbacks.Plugin):
     """An alternative to Supybot's DNS function.
@@ -201,8 +200,7 @@ class MyDNS(callbacks.Plugin):
         try:
             s = ''
             seq = [city, state, long, lat, code, country, flag, zip]
-
-            return (s.join( seq ))
+            return (s.join( seq ))        
         except TypeError:
             print(f'Could not resolve {address}')
 
