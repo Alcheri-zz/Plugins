@@ -5,7 +5,7 @@ Returns the ping result of <hostname | ip or IPv6> using Python's shlex library.
 Configuring:
 ===========
 
-* config channel #channel plugins.myping.enable True or False (or On or Off)
+* `config channel #channel plugins.MyPing.enable True or False` (On or Off)
 
 Setting up:
 ==========
