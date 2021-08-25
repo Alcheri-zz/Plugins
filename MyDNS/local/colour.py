@@ -99,6 +99,6 @@ def light_gray(s):
 # Non-mIRC
 def bold(s):
     """Returns the string s, bolded."""
-    return '\x02%s\x02' % s
+    return f'\x02{s}\x02'
 
 # vim:set shiftwidth=4 softtabstop=4 expandtab textwidth=79:
