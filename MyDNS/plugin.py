@@ -39,7 +39,7 @@ from urllib.parse import urlparse
 import ipaddress
 
 # mIRC colour codes
-from .local.color import teal
+from .local.colour import bold, teal
 
 from supybot.commands import *
 import supybot.ircutils as utils
@@ -142,8 +142,8 @@ class MyDNS(callbacks.Plugin):
         ipaddress = result[0][4][0]
         geoip = self.geoip(ipaddress)
 
-        dns = teal('DNS: ')
-        loc = teal('LOC: ')
+        dns = bold(teal('DNS: '))
+        loc = bold(teal('LOC: '))
 
         return (f'{dns}{host} resolves to [{ipaddress}] {loc}{geoip}')
 
@@ -155,8 +155,8 @@ class MyDNS(callbacks.Plugin):
             hostname = hostname + ' <> ' + address[0]
             geoip = self.geoip(address[0])
             shortname = hostname.split('.')[0]
-            dns = teal('DNS:')
-            loc = teal('LOC:')
+            dns = bold(teal('DNS: '))
+            loc = bold(teal('LOC: '))
             return (f'{dns} <{shortname}> [{hostname}] {loc} {geoip}')
         except socket.error as err:  # Catch failed address lookup.
             return (f'Could not resolve {ip}: {err}')
