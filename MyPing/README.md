@@ -18,4 +18,5 @@ Using:
 [prefix/nick] pings <hostname | Nick | IPv4 or IPv6>
 
 **Note:** [prefix] may be set via 'config reply.whenAddressedBy.chars' \
-          Supybots' core 'ping' function cannot be replaced as it checks to see if the bot is alive.
+
+Supybots' core 'ping' function cannot be replaced as it checks to see if the bot is alive.
