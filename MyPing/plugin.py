@@ -35,6 +35,8 @@ from supybot.commands import *
 import supybot.ircutils as utils
 import supybot.callbacks as callbacks
 
+from .local.colour import red, teal
+
     ###############
     #  FUNCTIONS  #
     ###############
@@ -63,16 +65,6 @@ def is_nick(nick):
         if not char.isalnum() and char not in special_chars:
             return False
     return True
-
-def teal(string):
-    """Return a bolded teal coloured string.
-    """
-    return utils.bold(utils.mircColor(string, 'teal'))
-
-def red(string):
-    """Return a bolded red coloured string.
-    """
-    return utils.bold(utils.mircColor(string, 'red'))
 
 def GetMatch(output):
     """
