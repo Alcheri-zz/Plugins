@@ -200,9 +200,9 @@ class MyDNS(callbacks.Plugin):
         try:
             s = ''
             seq = [city, state, long, lat, code, country, flag, zip]
-            return (s.join( seq ))        
+            return (s.join( seq ))
         except TypeError:
-            print(f'Could not resolve {address}')
+            raise callbacks.Error(f'Could not resolve {address}')
 
 Class = MyDNS
 
