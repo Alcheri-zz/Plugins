@@ -10,7 +10,7 @@ Configuring:
 
 * Enable in channel(s):
 
-* config channel #channel plugins.onjoin.enable True or False (or On or Off)
+* `config channel #channel plugins.onjoin.enable True or False` (On or Off)
 
 Setting up:
 ==========
