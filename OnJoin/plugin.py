@@ -56,7 +56,7 @@ class OnJoin(callbacks.Plugin):  # pylint: disable=too-many-ancestors
             selected_line = ''
             try:
                 with open(fp) as f:
-                    while 1:
+                    while True:
                         line = f.readline()
                         if not line:
                             break
@@ -70,7 +70,7 @@ class OnJoin(callbacks.Plugin):  # pylint: disable=too-many-ancestors
                     pass
             except IOError as err:
                 # Non-fatal error traceback information
-                raise callbacks.Error(FileError('failed to open'), err)
+                raise FileError(f'{err}: failed to open')
         else:
             return
 
