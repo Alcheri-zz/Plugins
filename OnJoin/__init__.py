@@ -9,9 +9,9 @@
 OnJoin: Send a notice to all users entering a channel.
 """
 import sys
-# Python 3 ONLY!!
-if sys.version_info[0] < 3:
-    raise RuntimeError("This plugin requires Python 3.")
+
+if sys.version_info <= (3, 4):
+    raise RuntimeError("This plugin requires Python 3.4 or above.")
 
 import supybot
 import supybot.world as world
