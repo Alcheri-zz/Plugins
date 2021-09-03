@@ -10,13 +10,13 @@ Configuring:
 Setting up:
 ==========
 
-* None required.
+To stop conflict with Supybots' core 'ping' function do the following:\
+`[prefix] defaultplugin --remove ping Misc`\
+`[prefix] defaultplugin ping MyPing`
 
 Using:
 =====
 
-[prefix/nick] pings <hostname | Nick | IPv4 or IPv6>
+[prefix/nick] ping <hostname | Nick | IPv4 or IPv6>
 
 **Note:** [prefix] may be set via 'config reply.whenAddressedBy.chars' \
-
-Supybots' core 'ping' function cannot be replaced as it checks to see if the bot is alive.
