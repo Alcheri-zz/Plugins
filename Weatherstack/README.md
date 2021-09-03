@@ -18,7 +18,7 @@ Setting up:
 
 * The following libraries are required. Run the command (below) from the Weatherstack folder to install.
 * pgeocode   Python library for high performance off-line querying of GPS coordinates.
-* 'pip3 install -r requirements.txt'
+* `pip3 install -r requirements.txt`
 
 Configure your bot:
 ==================
