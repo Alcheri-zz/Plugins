@@ -19,4 +19,4 @@ Using:
 
 [prefix/nick] ping <hostname | Nick | IPv4 or IPv6>
 
-**Note:** [prefix] may be set via 'config reply.whenAddressedBy.chars' \
+**Note:** [prefix] may be set via `config reply.whenAddressedBy.chars`
