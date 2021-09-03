@@ -34,7 +34,13 @@ import subprocess
 from supybot.commands import *
 import supybot.ircutils as utils
 import supybot.callbacks as callbacks
-
+try:
+    from supybot.i18n import PluginInternationalization
+    _ = PluginInternationalization('MyPing')
+except ImportError:
+    # Placeholder that allows to run the plugin on a bot
+    # without the i18n module
+    _ = lambda x: x
 from .local.colour import red, teal
 
     ###############
@@ -88,7 +94,7 @@ class MyPing(callbacks.Plugin):
     threaded = True
 
     @wrap(['something'])
-    def pings(self, irc, msg, args, host):
+    def ping(self, irc, msg, args, host):
         """<hostmask> | Nick | IPv4 or IPv6>
         An alternative to Supybot's PING function.
         """
