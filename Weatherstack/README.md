@@ -1,7 +1,7 @@
 ![Supported Python versions](https://img.shields.io/badge/python-3.6%2C%203.7%2C%203.8%2C%203.9-blue.svg)
-# Weather
+# WeatherStack
 
-A plugin for Limnoria that uses the OpenWeather API. All output is in Metric.
+A plugin for Limnoria that uses the WeatherStack API. All output is in Metric.
 This plugin uses Alpha-2 Code for country code [iso.org](https://www.iso.org/obp/ui#iso:pub:PUB500001:en)
 
 Configuring:
