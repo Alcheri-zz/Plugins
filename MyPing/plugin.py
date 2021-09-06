@@ -72,11 +72,11 @@ def is_nick(nick):
             return False
     return True
 
-def GetMatch(output):
+def _elapsed_loss(loss):
     """
     :rtype: dict or None
     """
-    lines = output.split("\n")
+    lines = loss.split("\n")
     loss = lines[-2].split(',')[2].split()[0]
     timing = lines[-1].split()[3].split('/')
     elapsed = int(float(timing[1]))
@@ -114,8 +114,8 @@ class MyPing(callbacks.Plugin):
                 pass
         cmd = shlex.split(f'ping -c 1 -W 1 {host}')
         try:
-            output = subprocess.check_output(cmd).decode().strip()
-            elapsed_loss = GetMatch(output)
+            reply = subprocess.check_output(cmd).decode().strip()
+            elapsed_loss = _elapsed_loss(reply)
         except subprocess.CalledProcessError:
             #Will print the command failed
             irc.reply(f'{red(cmd[-1])} is Not Reachable', prefixNick=False)
