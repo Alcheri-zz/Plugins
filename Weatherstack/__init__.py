@@ -39,10 +39,11 @@ import supybot
 from supybot import world
 
 # Use this for the version of this plugin.
-__version__ = "25072021+git"
+__version__ = "25072021"
 
 # XXX Replace this with an appropriate author or supybot.Author instance.
-__author__ = supybot.authors, 'Alchera'
+__author__ = supybot.Author('Barry Suridge', 'Alcheri',
+                            'barry.suridge@outlook.com')
 
 # This is a dictionary mapping supybot.Author instances to lists of
 # contributions.
