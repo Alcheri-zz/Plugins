@@ -35,7 +35,7 @@ from requests.models import HTTPError
 from time import sleep
 
 from supybot.commands import *
-from supybot import callbacks, log
+from supybot import callbacks, ircutils, log
 
 try:
     from requests_cache import CachedSession
@@ -43,7 +43,7 @@ except ImportError:
     CachedSession = None
     raise callbacks.Error('requests_cache is not installed; caching disabled.')
 
-# Unicode symbol (https://en.wikipedia.org/wiki/List_of_Unicode_characters#Latin-1_Supplement)
+#XXX Unicode symbol (https://en.wikipedia.org/wiki/List_of_Unicode_characters#Latin-1_Supplement)
 apostrophe = u'\N{APOSTROPHE}'
 degree_sign = u'\N{DEGREE SIGN}'
 # micro_sign = u'\N{MICRO SIGN}'
@@ -51,8 +51,34 @@ percent_sign = u'\N{PERCENT SIGN}'
 quotation_mark = u'\N{QUOTATION MARK}'
 
 headers = {
-    'User-Agent': 'Mozilla/5.0 (X11; Debian; Linux x86_64; rv:35.0) Gecko/20100101 Firefox/35.0',
+    'User-Agent': 'Mozilla/5.0 (X11; Debian; Linux x86_64; rv:35.0) Gecko/20100101 Firefox/35.0'
 }
+
+def colour(celsius):
+    """Colourise temperatures."""
+    if celsius is None:
+        return ('N/A')
+
+    c = float(celsius)
+    if c < 0:
+        colour = 'blue'
+    elif c == 0:
+        colour = 'teal'
+    elif c < 10:
+        colour = 'light blue'
+    elif c < 20:
+        colour = 'light green'
+    elif c < 30:
+        colour = 'green'
+    elif c < 40:
+        colour = 'yellow'
+    elif c < 50:
+        colour = 'orange'
+    else:
+        colour = 'red'
+    string = (f'{c}{degree_sign}C')
+
+    return ircutils.mircColor(string, colour)
 
 def dd2dms(longitude, latitude):
     # math.modf() splits whole number and decimal into tuple
@@ -107,6 +133,7 @@ class Weather(callbacks.Plugin):
 
     def format_weather_output(self, location, data):
         """Gather all the data - format it"""
+        self.log.info('Weather: format_weather_output %r', location)
         current    = data['current']
         icon       = current['weather'][0].get('icon')
         staticon   = self._get_status_icon(icon)
@@ -136,6 +163,7 @@ class Weather(callbacks.Plugin):
             gust = round(current['wind_gust'])
         except KeyError:
             gust = 0
+
         # Forecast day one
         day1        = data['daily'][1]
         day1name    = datetime.fromtimestamp(day1['dt']).strftime('%A')
@@ -153,13 +181,14 @@ class Weather(callbacks.Plugin):
         # Formatted output
         a = f'🏠 {location} :: UTC {utc} :: Lat {LAT} Lon {LON} :: {staticon} {desc} '
         b = f'| 🌡 Barometric {atmos}hPa | Dew Point {dp}°C | ☁ Cloud cover {cloud}{percent_sign} '
-        c = f'| {precipico} Precip {precip}mmh | 💦 Humidity {humid}{percent_sign} | Current {temp}°C '
-        d = f'| Feels like {feelslike}°C | 🍃 Wind {wind}Km/H {arrow} '
+        c = f'| {precipico} Precip {precip}mmh | 💦 Humidity {humid}{percent_sign} | Current {colour(temp)} '
+        d = f'| Feels like {colour(feelslike)} | 🍃 Wind {wind}Km/H {arrow} '
         e = f'| 💨 Gust {gust}m/s | 👁 Visibility {vis}Km | {uvicon} UVI {uvi} '
-        f = f'| {day1name}: {day1weather} Max {day1highC}°C Min {day1lowC}°C | {day2name}: {day2weather} Max {day2highC}°C Min {day2lowC}°C.'
+        f = f'| {day1name}: {day1weather} Max {colour(day1highC)} Min {colour(day1lowC)}'
+        g = f'| {day2name}: {day2weather} Max {colour(day2highC)} Min {colour(day2lowC)}.'
 
         s = ''
-        seq = [a, b, c, d, e, f]
+        seq = [a, b, c, d, e, f, g]
         return((s.join(seq)))
 
     @staticmethod
@@ -230,14 +259,16 @@ class Weather(callbacks.Plugin):
                             expire_after=180)
                 req = session.get(uri, headers=headers)
             else:
+                self.log.info('Weather: caching not enabled. requests_cache is not installed.')
                 sleep(1)
                 req = requests.get(uri, headers=headers)
             data = req.json()
         except HTTPError as e:
-            log.debug('Weather: error %s searching for %r from OSM/Nominatim:',
+            self.log.debug('Weather: error %s searching for %r from OSM/Nominatim:',
                       e, location, exc_info=True)
             data = None
         if not data:
+            self.log.error('Weather: Unknown location %r from OSM/Nominatim' % location)
             raise callbacks.Error('Unknown location %r from OSM/Nominatim' % location)
         data = data[0]
         # Limit location verbosity to 3 divisions (e.g. City, Province/State, Country)
@@ -259,6 +290,7 @@ class Weather(callbacks.Plugin):
             osm_id = ''
         return (lat, lon, display_name, osm_id, 'OSM/Nominatim')
 
+    #XXX For future update(s)
     def owm_weather(self, location):
         """OpenWeatherMap API"""
         location = location.lower()
@@ -276,14 +308,13 @@ class Weather(callbacks.Plugin):
                 raise callbacks.Error('<postcode, country code>')
         return
 
-    @wrap(['text'])
+    @wrap(['anything'])
     def weather(self, irc, msg, args, location):
         """[<city> <country code>] ][<postcode, country code>]
         Get weather information for a town or city.
         I.E. weather Ballarat or Ballarat AU OR 3350, AU
         """
         location = location.lower()
-        channel = msg.channel
 
         apikey = self.registryValue('openweatherAPI')
         # Missing API Key.
@@ -292,8 +323,10 @@ class Weather(callbacks.Plugin):
                 'Please configure the OpenWeatherMap API key in config plugins.Weather.openweatherAPI')
 
         # Not 'enabled' in #channel.
-        if not self.registryValue('enable', channel):
+        if not self.registryValue('enable', msg.channel, irc.network):
             return
+
+        self.log.info('Weather: running on %s/%s', irc.network, msg.channel)
 
         # Check for a postcode
         self._query_location(location)
@@ -333,7 +366,7 @@ class Weather(callbacks.Plugin):
 
     @wrap(['something'])
     def help(self, irc):
-        """No help for you as yet """
+        """No help for you as yet"""
 
 Class = Weather
 
