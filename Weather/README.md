@@ -21,7 +21,7 @@ Configure your bot:
 ==================
 
 * /msg yourbot load Weather
-* /msg yourbot `config plugins.Weather.openweatherAPI your_key_here`
+* /msg yourbot `config plugins.Weather.openweatherAPI [your_key_here]`
 * /msg yourbot `config channel #channel plugins.Weather.enable True or False` (On or Off)
 
 Using:
