@@ -42,13 +42,20 @@ import ipaddress
 from .local.colour import bold, teal
 
 from supybot.commands import *
+from supybot import callbacks
 import supybot.ircutils as utils
-import supybot.callbacks as callbacks
+
+try:
+    from supybot.i18n import PluginInternationalization
+    _ = PluginInternationalization('MyDNS')
+except ImportError:
+    _ = lambda x: x
 
     ###############
     #  FUNCTIONS  #
     ###############
 
+#XXX https://datatracker.ietf.org/doc/html/rfc2812#section-2.3.1
 special_chars = (
     '-',
     '[',
@@ -104,25 +111,25 @@ class MyDNS(callbacks.Plugin):
         Returns the ip of <hostname | Nick | URL | ip or IPv6> or the reverse
         DNS hostname of <ip> using Python's socket library
         """
-        channel = msg.args[0]
-
-        # Check if we should be 'disabled' in a channel.
-        # config channel #channel plugins.mydns.enable True or False (or On or Off)
-        if self.registryValue('enable', channel):
-            if is_ip(address):
-                irc.reply(self.gethostbyaddr(address), prefixNick=False)
-            elif is_nick(address):  # Valid nick?
-                nick = address
-                try:
-                    userHostmask = irc.state.nickToHostmask(nick)
-                    (nick, _, host) = utils.splitHostmask(userHostmask)  # Returns the nick and host of a user hostmask.
-                    irc.reply(self.gethostbyaddr(host), prefixNick=False)
-                except KeyError:
-                    irc.reply(f"[{nick}] is unknown.", prefixNick=False)
-            else:  # Neither IP or IRC user nick.
-                irc.reply(self.getaddrinfo(address), prefixNick=False)
-        else:
+        # Check if we should be 'enabled' in a channel.
+        # config channel #channel supybot.plugins.MyDNS.enable True or False (On or Off)
+        if not self.registryValue('enable', msg.channel, irc.network):
             return
+
+        self.log.info('MyDNS: running on %s/%s', irc.network, msg.channel)
+
+        if is_ip(address):
+            irc.reply(self.gethostbyaddr(address), prefixNick=False)
+        elif is_nick(address):  # Valid nick?
+            nick = address
+            try:
+                userHostmask = irc.state.nickToHostmask(nick)
+                (nick, _, host) = utils.splitHostmask(userHostmask)  # Returns the nick and host of a user hostmask.
+                irc.reply(self.gethostbyaddr(host), prefixNick=False)
+            except KeyError:
+                irc.reply(f"[{nick}] is unknown.", prefixNick=False)
+        else:  # Neither IP or IRC user nick.
+            irc.reply(self.getaddrinfo(address), prefixNick=False)
 
     def getaddrinfo(self, host):
         """Get host information. Use returned IP address
@@ -137,6 +144,7 @@ class MyDNS(callbacks.Plugin):
         try:
             result = socket.getaddrinfo(host, None)
         except socket.error as err:  # Catch failed address lookup.
+            self.log.error('MyDNS: Could not resolve  %s: %s', host, err)
             return (f'Could not resolve {host}: {err}')
 
         ipaddress = result[0][4][0]
@@ -159,6 +167,7 @@ class MyDNS(callbacks.Plugin):
             loc = bold(teal('LOC: '))
             return (f'{dns} <{shortname}> [{hostname}] {loc} {geoip}')
         except socket.error as err:  # Catch failed address lookup.
+            self.log.error('MyDNS: Could not resolve  %s: %s', ip, err)
             return (f'Could not resolve {ip}: {err}')
 
     def geoip(self, address):
@@ -202,6 +211,7 @@ class MyDNS(callbacks.Plugin):
             seq = [city, state, long, lat, code, country, flag, zip]
             return (s.join( seq ))
         except TypeError:
+            self.log.error('MyDNS: Could not resolve %s', address)
             raise callbacks.Error(f'Could not resolve {address}')
 
 Class = MyDNS
