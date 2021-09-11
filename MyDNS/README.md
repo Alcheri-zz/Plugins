@@ -13,7 +13,7 @@ Unload the Internet plugin as it conflicts with this plugin:
 Configure your bot:
 
 * /msg yourbot load mydns
-* /msg yourbot `config plugins.MyDNS.ipstackAPI your_key_here`
+* /msg yourbot `config plugins.MyDNS.ipstackAPI [your_key_here]`
 * /msg yourbot unload Internet
 * /msg yourbot `config channel #channel plugins.MyDNS.enable True or False` (On or Off)
 
@@ -21,7 +21,7 @@ Setting up:
 ==========
 
 * This plugin uses Python's HTTP client. If not already installed run the following from the plugins/MyDNS folder.
-* `pip install -r requirements.txt` 
+* `pip3 install -r requirements.txt`
 
 Using:
 =====
@@ -33,4 +33,5 @@ Using:
 Example:
 ========
 
-DNS: crawl-203-208-60-1.googlebot.com resolves to [203.208.60.1] LOC: City:Beijing State:Beijing Long:116.37922668457031 Lat:39.91175842285156 Country Code:CN Country:China 🇨🇳 Post/Zip Code:100000
+`@dns crawl-203-208-60-1.googlebot.com`\
+`DNS: crawl-203-208-60-1.googlebot.com resolves to [203.208.60.1] LOC: City:Beijing State:Beijing Long:116.37922668457031 Lat:39.91175842285156 Country Code:CN Country:China 🇨🇳 Post/Zip Code:100000`
