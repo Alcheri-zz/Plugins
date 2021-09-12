@@ -1,16 +1,14 @@
 sudo: false
 language: python
 python:
-  - "3.2"
-  - "3.3"
-  - "3.4"
   - "3.5"
   - "3.6"
   - "3.7"
   - "3.8"
+  - "3.9"
 
 install:
-    - pip install -vr requirements.txt
+    - pip3 install -vr requirements.txt
 
 script:
   - echo $TRAVIS_PYTHON_VERSION
@@ -23,11 +21,9 @@ notifications:
 
 matrix:
     allow_failures:
-        - python: "3.2"
-        - python: "3.3"
-        - python: "3.4"
         - python: "3.5"
         - python: "3.6"
         - python: "3.7"
         - python: "3.8"
+        - python: "3.9"
     fast_finish: true
