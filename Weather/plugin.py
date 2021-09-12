@@ -35,7 +35,7 @@ from requests.models import HTTPError
 from time import sleep
 
 from supybot.commands import *
-from supybot import callbacks, ircutils, log
+from supybot import callbacks, ircutils
 
 try:
     from requests_cache import CachedSession
@@ -55,10 +55,7 @@ headers = {
 }
 
 def colour(celsius):
-    """Colourise temperatures."""
-    if celsius is None:
-        return ('N/A')
-
+    """Colourise temperatures"""
     c = float(celsius)
     if c < 0:
         colour = 'blue'
@@ -69,10 +66,8 @@ def colour(celsius):
     elif c < 20:
         colour = 'light green'
     elif c < 30:
-        colour = 'green'
-    elif c < 40:
         colour = 'yellow'
-    elif c < 50:
+    elif c < 40:
         colour = 'orange'
     else:
         colour = 'red'
@@ -80,6 +75,7 @@ def colour(celsius):
 
     return ircutils.mircColor(string, colour)
 
+#XXX Converts decimal degrees to degrees, minutes, and seconds
 def dd2dms(longitude, latitude):
     # math.modf() splits whole number and decimal into tuple
     # eg 53.3478 becomes (0.3478, 53)
@@ -123,7 +119,10 @@ def dd2dms(longitude, latitude):
     return (x, y)
 
 class Weather(callbacks.Plugin):
-    """A simple OpenWeather plugin for Limnoria"""
+    """
+    A simple Weather plugin for Limnoria
+    using the OpenWeatherMap API
+    """
     threaded = True
 
     def __init__(self, irc):
@@ -132,8 +131,11 @@ class Weather(callbacks.Plugin):
         self.__parent.__init__(irc)
 
     def format_weather_output(self, location, data):
-        """Gather all the data - format it"""
+        """
+        Gather all the data - format it
+        """
         self.log.info('Weather: format_weather_output %r', location)
+
         current    = data['current']
         icon       = current['weather'][0].get('icon')
         staticon   = self._get_status_icon(icon)
@@ -213,8 +215,10 @@ class Weather(callbacks.Plugin):
 
     @staticmethod
     def _get_status_icon(code):
-        """Use the given code to display appropriate
-        weather status icon"""
+        """
+        Use the given code to display appropriate
+        weather status icon
+        """
         switcher = {
             '01d': '☀',
             '01n': '🌚',
@@ -268,7 +272,8 @@ class Weather(callbacks.Plugin):
                       e, location, exc_info=True)
             data = None
         if not data:
-            self.log.error('Weather: Unknown location %r from OSM/Nominatim' % location)
+            self.log.error('Weather: Unknown location %r from OSM/Nominatim',
+                      location, exc_info=True)
             raise callbacks.Error('Unknown location %r from OSM/Nominatim' % location)
         data = data[0]
         # Limit location verbosity to 3 divisions (e.g. City, Province/State, Country)
@@ -310,7 +315,8 @@ class Weather(callbacks.Plugin):
 
     @wrap(['anything'])
     def weather(self, irc, msg, args, location):
-        """[<city> <country code>] ][<postcode, country code>]
+        """
+        [<city> <country code>] ][<postcode, country code>]
         Get weather information for a town or city.
         I.E. weather Ballarat or Ballarat AU OR 3350, AU
         """
