@@ -1,4 +1,4 @@
-![Supported Python versions](https://img.shields.io/badge/python-3.4%2C%203.5%2C%203.6%2C%203.7%2C%203.8-blue.svg)
+![Python versions](https://img.shields.io/badge/Python-version-blue) ![](https://img.shields.io/badge/3.5%2C%203.6%2C%203.7%2C%203.8%2C%203.9-blue.svg)
 
 OnJoin
 ===========
