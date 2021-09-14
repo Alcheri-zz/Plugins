@@ -39,7 +39,7 @@ import supybot
 from supybot import world
 
 # Use this for the version of this plugin.
-__version__ = "07082021"
+__version__ = "15092021"
 
 # XXX Replace this with an appropriate author or supybot.Author instance.
 __author__ = supybot.Author('Barry Suridge', 'Alcheri',
