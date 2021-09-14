@@ -13,9 +13,7 @@ Get an API key: [OpenWeather](https://openweathermap.org/)
 Setting up:
 ==========
 
-* The following library is required. Run the command (below) from the Weather folder to install.
-* requests-cache: A persistent HTTP cache for the python requests library.
-* `pip3 install -r requirements.txt`
+* None required.
 
 Configure your bot:
 ==================
@@ -27,8 +25,8 @@ Configure your bot:
 Using:
 =====
 
-[prefix/nick] weather [city <(Alpha-2) country code>] [<postcode, (Alpha-2) country code>]\
-[prefix/nick] lookup&nbsp; [city <(Alpha-2) country code>]
+[prefix] weather [city <(Alpha-2) country code>] [<postcode, (Alpha-2) country code>]\
+[prefix] lookup&nbsp; [city <(Alpha-2) country code>]
 
 
 **Note:** [prefix] may be set via `config reply.whenAddressedBy.chars`
