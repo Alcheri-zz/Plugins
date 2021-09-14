@@ -1,4 +1,4 @@
-![Python versions](https://img.shields.io/badge/Python-version-blue) ![](https://img.shields.io/badge/3.5%2C%203.6%2C%203.7%2C%203.8%2C%203.9-blue.svg)
+![Python versions](https://img.shields.io/badge/Python-version-blue) ![](https://img.shields.io/badge/3.6%2C%203.7%2C%203.8%2C%203.9-blue.svg)
 
 # An alternative to Supybot's DNS function.
 Returns the ip of <hostname | URL | nick | IPv4 or IPv6> or the reverse DNS hostname of \<ip\> using Python's socket library.
