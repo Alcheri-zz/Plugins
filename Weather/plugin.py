@@ -27,21 +27,15 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 ###
+import math
 import re
 import requests
-import math
 from datetime import datetime
-from requests.models import HTTPError
-from time import sleep
+from functools import lru_cache
+from requests.exceptions import HTTPError
 
 from supybot.commands import *
-from supybot import callbacks, ircutils
-
-try:
-    from requests_cache import CachedSession
-except ImportError:
-    CachedSession = None
-    raise callbacks.Error('requests_cache is not installed; caching disabled.')
+from supybot import callbacks, ircutils, log
 
 #XXX Unicode symbol (https://en.wikipedia.org/wiki/List_of_Unicode_characters#Latin-1_Supplement)
 apostrophe = u'\N{APOSTROPHE}'
@@ -76,6 +70,7 @@ def colour(celsius):
     return ircutils.mircColor(string, colour)
 
 #XXX Converts decimal degrees to degrees, minutes, and seconds
+@lru_cache(maxsize=16)    #XXX LRU caching
 def dd2dms(longitude, latitude):
     # math.modf() splits whole number and decimal into tuple
     # eg 53.3478 becomes (0.3478, 53)
@@ -134,7 +129,7 @@ class Weather(callbacks.Plugin):
         """
         Gather all the data - format it
         """
-        self.log.info('Weather: format_weather_output %r', location)
+        log.info(f'Weather: format_weather_output {location}')
 
         current    = data['current']
         icon       = current['weather'][0].get('icon')
@@ -186,7 +181,7 @@ class Weather(callbacks.Plugin):
         c = f'| {precipico} Precip {precip}mmh | 💦 Humidity {humid}{percent_sign} | Current {colour(temp)} '
         d = f'| Feels like {colour(feelslike)} | 🍃 Wind {wind}Km/H {arrow} '
         e = f'| 💨 Gust {gust}m/s | 👁 Visibility {vis}Km | {uvicon} UVI {uvi} '
-        f = f'| {day1name}: {day1weather} Max {colour(day1highC)} Min {colour(day1lowC)}'
+        f = f'| {day1name}: {day1weather} Max {colour(day1highC)} Min {colour(day1lowC)} '
         g = f'| {day2name}: {day2weather} Max {colour(day2highC)} Min {colour(day2lowC)}.'
 
         s = ''
@@ -197,7 +192,7 @@ class Weather(callbacks.Plugin):
     def _format_uvi_icon(uvi):
         """
         Diplays a coloured icon relevant to the UV Index meter.
-        Low: Green Moderate: Yellow High: Orange Very Hight: Red
+        Low: Green Moderate: Yellow High: Orange Very High: Red
         Extreme: Violet 🥵
         """
         ico = float(uvi)
@@ -252,29 +247,25 @@ class Weather(callbacks.Plugin):
         return arr[(val % 16)]
 
     # Credit: https://github.com/jlu5/SupyPlugins/blob/master/NuWeather/plugin.py
+    @lru_cache(maxsize=16)    #XXX LRU caching
     def osm_geocode(self, location):
         location = location.lower()
         uri = f'https://nominatim.openstreetmap.org/search/{location}?format=jsonv2&\
                 accept-language="en"'
-        # User agent and caching are required
+        # User agent is required
         try:
-            if CachedSession is not None:
-                session = CachedSession('weather', backend='sqlite',
-                            expire_after=180)
-                req = session.get(uri, headers=headers)
-            else:
-                self.log.info('Weather: caching not enabled. requests_cache is not installed.')
-                sleep(1)
-                req = requests.get(uri, headers=headers)
+            req = requests.get(uri, headers=headers)
+
+            # If the response was successful, no Exception will be raised
+            req.raise_for_status()
+
             data = req.json()
-        except HTTPError as e:
-            self.log.debug('Weather: error %s searching for %r from OSM/Nominatim:',
-                      e, location, exc_info=True)
+        except HTTPError as http_err:
+            log.debug(f'Weather: error {http_err} searching for {location} from OSM/Nominatim:',
+                      exc_info=True)
             data = None
         if not data:
-            self.log.error('Weather: Unknown location %r from OSM/Nominatim',
-                      location, exc_info=True)
-            raise callbacks.Error('Unknown location %r from OSM/Nominatim' % location)
+            raise callbacks.Error(f'Unknown location {location} from OSM/Nominatim')
         data = data[0]
         # Limit location verbosity to 3 divisions (e.g. City, Province/State, Country)
         display_name = data['display_name']
@@ -295,11 +286,10 @@ class Weather(callbacks.Plugin):
             osm_id = ''
         return (lat, lon, display_name, osm_id, 'OSM/Nominatim')
 
-    #XXX For future update(s)
-    def owm_weather(self, location):
-        """OpenWeatherMap API"""
-        location = location.lower()
-        pass
+    #XXX For future use
+    # def owm_weather(self, location):
+    #     """OpenWeatherMap API"""
+    #     pass
 
     @staticmethod
     def _query_location(location):
@@ -313,7 +303,7 @@ class Weather(callbacks.Plugin):
                 raise callbacks.Error('<postcode, country code>')
         return
 
-    @wrap(['anything'])
+    @wrap(['text'])
     def weather(self, irc, msg, args, location):
         """
         [<city> <country code>] ][<postcode, country code>]
@@ -332,36 +322,44 @@ class Weather(callbacks.Plugin):
         if not self.registryValue('enable', msg.channel, irc.network):
             return
 
-        self.log.info('Weather: running on %s/%s', irc.network, msg.channel)
+        log.info(f'Weather: running on {irc.network}/{msg.channel}')
 
         # Check for a postcode
         self._query_location(location)
 
         # Get details from OSM/Nominatim
         (latitude, longitude, location, id, text) = self.osm_geocode(location)
+
         # Get the weather data
+        params = {
+            'lat': latitude,
+            'lon': longitude,
+            'appid': apikey,
+            'units': 'metric',
+            'exclude': 'minutely'
+        }
+        # Base URI for Openweathermap
+        base_uri = ('http://api.openweathermap.org')
+        url = f'{base_uri}/data/2.5/onecall?'
+        
         try:
-            params = {
-                'lat': latitude,
-                'lon': longitude,
-                'appid': apikey,
-                'units': 'metric',
-                'exclude': 'minutely'
-            }
-            # Base URI for Openweathermap
-            base_uri = ('http://api.openweathermap.org')
-            url = f'{base_uri}/data/2.5/onecall?'
             Weather = requests.get(url, params, headers=headers)
 
-            # Is HTTP Status OK?
-            if Weather:
-                weather = Weather.json()
-                # Print weather details and forecast(s)
-                irc.reply(self.format_weather_output(location, weather))
-            else:
-                raise callbacks.Error(f'{Weather} in the HTTP request')
-        except NameError:
-            raise callbacks.Error('418: I\'m a teapot')
+            # If the response was successful, no Exception will be raised
+            Weather.raise_for_status()
+        except HTTPError as http_err:
+            log.error(f'Weather: HTTP error occurred: {http_err}',
+                    exc_info=True)
+            raise callbacks.Error(f'Weather: HTTP error occurred: {http_err}')
+        except Exception as err:
+            log.error(f'Weather: an error occurred: {err}',
+                    exc_info=True)
+            raise callbacks.Error(f'Weather: an error occurred: {err}')
+        else:
+            weather = Weather.json()
+
+            # Print weather details and forecast(s)
+            irc.reply(self.format_weather_output(location, weather))
 
     @wrap(['text'])
     def lookup(self, irc, msg, args, location):
@@ -372,7 +370,7 @@ class Weather(callbacks.Plugin):
 
     @wrap(['something'])
     def help(self, irc):
-        """No help for you as yet"""
+        """418: I\'m a teapot"""
 
 Class = Weather
 
