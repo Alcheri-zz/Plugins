@@ -182,8 +182,8 @@ def format_weather_output(response):
     status_icon = get_status_icon(weather_code)
     uvi_icon    = format_uvi_icon(uvi)
 
-    # Remove brackets and single quote marks from 'weather_descriptions'
-    description = re.sub('[\'\]\[]', '', str(description))
+    # Remove unwanted characters from 'weather_descriptions'
+    description = re.sub('[]\'[]', '', str(description))
 
     # Format output
     a = f'🏠 {city_name} {region} {country} :: Lat {lat} Lon {lon} :: UTC {utc} :: {cr_date} :: {status_icon} {description} '
