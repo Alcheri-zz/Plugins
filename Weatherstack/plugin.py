@@ -227,7 +227,8 @@ def get_wind_direction(wind):
 
 @lru_cache(maxsize=16)    #XXX LRU caching
 def query_postal_code(code):
-    """This function returns longitude and latitude from
+    """
+    This function returns longitude and latitude from
     a postcode."""
     postcode = code.split(',', 1)[0]
     try:
@@ -242,7 +243,10 @@ def query_postal_code(code):
     return[zip.latitude, zip.longitude]
 
 class Weatherstack(callbacks.Plugin):
-    """A simple Weather plugin for Limnoria"""
+    """
+    A simple Weather plugin for Limnoria
+    using the WeatherStack API
+    """
     threaded = True
 
     def __init__(self, irc):
