@@ -27,15 +27,16 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 ###
+import math
 import re
 import requests
-import json
-import os
-import math
+
 from datetime import datetime
+from functools import lru_cache
+from requests.exceptions import HTTPError
 
 from supybot.commands import *
-from supybot import callbacks
+from supybot import callbacks, ircutils, log
 
 try:
     import pgeocode
@@ -56,6 +57,29 @@ def contains_number(value):
     numbers = re.findall('[0-9]+', value)
     return True if numbers else False
 
+def colour(celsius):
+    """Colourise temperatures"""
+    c = float(celsius)
+    if c < 0:
+        colour = 'blue'
+    elif c == 0:
+        colour = 'teal'
+    elif c < 10:
+        colour = 'light blue'
+    elif c < 20:
+        colour = 'light green'
+    elif c < 30:
+        colour = 'yellow'
+    elif c < 40:
+        colour = 'orange'
+    else:
+        colour = 'red'
+    string = (f'{c}{degree_sign}C')
+
+    return ircutils.mircColor(string, colour)
+
+#XXX Converts decimal degrees to degrees, minutes, and seconds
+@lru_cache(maxsize=16)    #XXX LRU caching
 def dd2dms(longitude, latitude):
     # math.modf() splits whole number and decimal into tuple
     # eg 53.3478 becomes (0.3478, 53)
@@ -116,7 +140,11 @@ def format_uvi_icon(ico):
     return icon
 
 def format_weather_output(response):
-    """Gather all the data - format it"""
+    """
+    Gather all the data - format it
+    """
+    log.info('WeatherStack: format_weather_output %s %s', response['location']['name'], response['location']['country'])
+
     location  = response['location']
     current   = response['current']
 
@@ -155,25 +183,18 @@ def format_weather_output(response):
     uvi_icon    = format_uvi_icon(uvi)
 
     # Remove brackets and single quote marks from 'weather_descriptions'
-    description = re.sub('[\'][]', '', str(description))
+    description = re.sub('[\'\]\[]', '', str(description))
 
     # Format output
     a = f'🏠 {city_name} {region} {country} :: Lat {lat} Lon {lon} :: UTC {utc} :: {cr_date} :: {status_icon} {description} '
     b = f'| 🌡 Barometric {atmos}hPa | ☁ Cloud cover {cloud}{percent_sign} | {precipico} Precip {precip}mmh '
-    c = f'| 💦 Humidity {humidity}{percent_sign} | Current {temp}°C '
-    d = f'| Feels like {feelslike}°C | 🍃 Wind {wind}Km/H {arrow} '
+    c = f'| 💦 Humidity {humidity}{percent_sign} | Current {colour(temp)}°C '
+    d = f'| Feels like {colour(feelslike)}°C | 🍃 Wind {wind}Km/H {arrow} '
     e = f'| 👁 Visibility {visibility}Km | {uvi_icon} UVI {uvi}'
 
     s = ''
     seq = [a, b, c, d, e]
     return((s.join( seq )))
-#XXX unused
-def get_cloud_coverage(cloud_dict):
-    if 'all' in cloud_dict:
-        clouds = cloud_dict['all']
-    else:
-        clouds = 0
-    return clouds
 
 # Select the appropriate weather status icon
 def get_status_icon(code):
@@ -204,14 +225,7 @@ def get_wind_direction(wind):
         'WSW','← W','WNW','↖ NW','NNW']
     return arr[(val % 16)]
 
-#XXX unused: Get precipitation reading
-def get_rain_precipitation(rain_dict):
-    if '1h' in rain_dict:
-        rain = rain_dict['1h']
-    else:
-        rain = 0
-    return rain
-
+@lru_cache(maxsize=16)    #XXX LRU caching
 def query_postal_code(code):
     """This function returns longitude and latitude from
     a postcode."""
@@ -236,8 +250,9 @@ class Weatherstack(callbacks.Plugin):
         self.__parent = super(Weatherstack, self)
         self.__parent.__init__(irc)
 
-    def get_address_by_location(self, latitude, longitude):
-        """This function returns an address from a location.
+    @lru_cache(maxsize=16)    #XXX LRU caching
+    def get_location_by_location(self, latitude, longitude):
+        """This function returns an location from a location.
         """
         apikey = self.registryValue('positionstackAPI')
         # Missing API Key.
@@ -261,12 +276,12 @@ class Weatherstack(callbacks.Plugin):
         return (locality)
 
     @wrap(['text'])
-    def ws(self, irc, msg, args, address):
+    def weather(self, irc, msg, args, location):
         """ [<city> <country code or country>] ][<postcode, country code>]
         Get weather information for a town or city.
         I.E. weather Ballarat or Ballarat, AU/Australia OR 3350, AU
         """
-        channel = msg.channel
+        location = location.lower()
 
         apikey = self.registryValue('weatherstackAPI')
         # Missing API Key.
@@ -275,50 +290,44 @@ class Weatherstack(callbacks.Plugin):
                 'Please configure the Weatherstack API key in config plugins.Weatherstack.weatherstackAPI')
 
         # Not 'enabled' in #channel.
-        if not self.registryValue('enable', channel):
+        if not self.registryValue('enable', msg.channel, irc.network):
             return
 
-        # Check if 'address' is a postcode.
-        if contains_number(address):
-            (lat, lon) = query_postal_code(address)
-            address = self.get_address_by_location(lat, lon)
+        log.info(f'WeatherStack: running on {irc.network}/{msg.channel}')
+
+        # Check if 'location' is a postcode.
+        if contains_number(location):
+            (lat, lon) = query_postal_code(location)
+            location = self.get_location_by_location(lat, lon)
 
         # Initialise API data
         params = {
             'access_key': apikey,
-            'query': address,
+            'query': location,
             'units': 'm'
         }
+        try:
+            api_result = requests.get('http://api.weatherstack.com/current', params)
 
-        api_result = requests.get('http://api.weatherstack.com/current', params)
-
-        # HTTP Status OK
-        if api_result.status_code == 200:
+            # If the response was successful, no Exception will be raised
+            api_result.raise_for_status()
+        except HTTPError as http_err:
+            self.log.error(f'Weather: HTTP error occurred: {http_err}',
+                    exc_info=True)
+            raise callbacks.Error(f'Weather: HTTP error occurred: {http_err}')
+        except Exception as err:
+            self.log.error(f'Weather: an error occurred: {err}',
+                    exc_info=True)
+            raise callbacks.Error(f'Weather: an error occurred: {err}')
+        else:
             api_response = api_result.json()  # Data collection
-            _status = api_response['current']['weather_descriptions']
-            _weather_code = api_response['current']['weather_code']
+
             # Print the weather output
             irc.reply(format_weather_output(api_response))
-        else:
-            raise callbacks.Error(f'{api_result.status_code} in the HTTP request')
-
-        # temp weather code collection
-        entry = {'status': _status, 'code': _weather_code}
-        a = []
-        if not os.path.isfile('data.json'):
-            a.append(entry)
-            with open('data.json', mode='w') as f:
-                f.write(json.dumps(a, indent=2))
-        else:
-            with open('data.json') as feedsjson:
-                feeds = json.load(feedsjson)
-            feeds.append(entry)
-            with open('data.json', mode='w') as f:
-                f.write(json.dumps(feeds, indent=2))
 
     @wrap(['something'])
     def help(self, irc):
-        """No help for you as yet """
+        """418: I\'m a teapot"""
 
 Class = Weatherstack
 
