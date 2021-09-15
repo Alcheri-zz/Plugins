@@ -187,8 +187,8 @@ def format_weather_output(response):
     # Format output
     a = f'🏠 {city_name} {region} {country} :: Lat {lat} Lon {lon} :: UTC {utc} :: {cr_date} :: {status_icon} {description} '
     b = f'| 🌡 Barometric {atmos}hPa | ☁ Cloud cover {cloud}{percent_sign} | {precipico} Precip {precip}mmh '
-    c = f'| 💦 Humidity {humidity}{percent_sign} | Current {colour(temp)}°C '
-    d = f'| Feels like {colour(feelslike)}°C | 🍃 Wind {wind}Km/H {arrow} '
+    c = f'| 💦 Humidity {humidity}{percent_sign} | Current {colour(temp)} '
+    d = f'| Feels like {colour(feelslike)} | 🍃 Wind {wind}Km/H {arrow} '
     e = f'| 👁 Visibility {visibility}Km | {uvi_icon} UVI {uvi}'
 
     s = ''
