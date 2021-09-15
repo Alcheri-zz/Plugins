@@ -34,6 +34,7 @@ from datetime import datetime
 from functools import lru_cache
 from requests.exceptions import HTTPError
 
+import supybot.log as log
 from supybot.commands import *
 from supybot import callbacks, ircutils, log
 
