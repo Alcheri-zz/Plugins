@@ -24,13 +24,13 @@ Configure your bot:
 ==================
 
 * /msg yourbot load Weatherstack
-* /msg yourbot `config plugins.Weatherstack.weatherstackAPI your_key_here`
-* /msg yourbot `config plugins.Weatherstack.positionstackAPI your_key_here`
+* /msg yourbot `config plugins.Weatherstack.weatherstackAPI [your_key_here]`
+* /msg yourbot `config plugins.Weatherstack.positionstackAPI [your_key_here]`
 * /msg yourbot `config channel #channel plugins.Weatherstack.enable True or False` (On or Off)
 
 Using:
 =====
 
-[prefix/nick] ws [city <(Alpha-2) country code>] [<postcode, (Alpha-2) country code>]
+[prefix] weather [city <(Alpha-2) country code>] [<postcode, (Alpha-2) country code>]
 
 **Note:** [prefix] may be set via 'config reply.whenAddressedBy.chars'
