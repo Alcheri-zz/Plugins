@@ -242,7 +242,7 @@ def query_postal_code(code):
     return[zip.latitude, zip.longitude]
 
 class Weatherstack(callbacks.Plugin):
-    """A simple OpenWeather plugin for Limnoria"""
+    """A simple Weather plugin for Limnoria"""
     threaded = True
 
     def __init__(self, irc):
