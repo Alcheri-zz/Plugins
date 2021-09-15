@@ -35,16 +35,14 @@ from datetime import datetime
 from functools import lru_cache
 from requests.exceptions import HTTPError
 
+import supybot.log as log
+from supybot import callbacks, ircutils
 from supybot.commands import *
-from supybot import callbacks, ircutils, log
 
 try:
     import pgeocode
 except ImportError:
     raise callbacks.Error('pgeocode is not installed. This plugin will not function!')
-
-from supybot import callbacks
-from supybot.commands import *
 
 # Unicode symbol (https://en.wikipedia.org/wiki/List_of_Unicode_characters#Latin-1_Supplement)
 apostrophe = u'\N{APOSTROPHE}'
@@ -209,6 +207,7 @@ def get_status_icon(code):
         '122': '☁',
         '143': '🌫',
         '176': '🌧',
+        '248': '🌫',
         '296': '🌧',
         '302': '🌧',
         '329': '❄',
@@ -273,8 +272,9 @@ class Weatherstack(callbacks.Plugin):
             locality = responses['data'][0].get('locality')
         except KeyError:
             raise callbacks.Error('404: city not found')
-        log.info(f'WeatherStack: get_location_by_location {latitude} | {longitude}')
-        
+
+        log.info(f'WeatherStack: get_location_by_location {locality}: {latitude},{longitude}')
+
         return (locality)
 
     @wrap(['text'])
