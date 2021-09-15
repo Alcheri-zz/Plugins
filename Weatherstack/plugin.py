@@ -315,11 +315,11 @@ class Weatherstack(callbacks.Plugin):
             # If the response was successful, no Exception will be raised
             api_result.raise_for_status()
         except HTTPError as http_err:
-            self.log.error(f'Weather: HTTP error occurred: {http_err}',
+            log.error(f'Weather: HTTP error occurred: {http_err}',
                     exc_info=True)
             raise callbacks.Error(f'Weather: HTTP error occurred: {http_err}')
         except Exception as err:
-            self.log.error(f'Weather: an error occurred: {err}',
+            log.error(f'Weather: an error occurred: {err}',
                     exc_info=True)
             raise callbacks.Error(f'Weather: an error occurred: {err}')
         else:
