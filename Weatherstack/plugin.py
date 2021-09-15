@@ -143,9 +143,10 @@ def format_weather_output(response):
     """
     Gather all the data - format it
     """
-    log.info('WeatherStack: format_weather_output %s %s', response['location']['name'], response['location']['country'])
-
-    location  = response['location']
+    try:
+        location  = response['location']
+    except KeyError:
+        raise callbacks.Error('404: city not found')
     current   = response['current']
 
     city_name = location['name']
@@ -252,7 +253,8 @@ class Weatherstack(callbacks.Plugin):
 
     @lru_cache(maxsize=16)    #XXX LRU caching
     def get_location_by_location(self, latitude, longitude):
-        """This function returns an location from a location.
+        """
+        This function returns a location from a reverse lookup.
         """
         apikey = self.registryValue('positionstackAPI')
         # Missing API Key.
@@ -271,13 +273,14 @@ class Weatherstack(callbacks.Plugin):
             locality = responses['data'][0].get('locality')
         except KeyError:
             raise callbacks.Error('404: city not found')
-        if str(locality) == 'None':
-            raise callbacks.Error('404: city not found')
+        log.info(f'WeatherStack: get_location_by_location {latitude} | {longitude}')
+        
         return (locality)
 
     @wrap(['text'])
     def weather(self, irc, msg, args, location):
-        """ [<city> <country code or country>] ][<postcode, country code>]
+        """
+        [<city> <country code or country>] ][<postcode, country code>]
         Get weather information for a town or city.
         I.E. weather Ballarat or Ballarat, AU/Australia OR 3350, AU
         """
