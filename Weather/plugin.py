@@ -36,7 +36,7 @@ from requests.exceptions import HTTPError
 
 import supybot.log as log
 from supybot.commands import *
-from supybot import callbacks, ircutils, log
+from supybot import callbacks, ircutils
 
 #XXX Unicode symbol (https://en.wikipedia.org/wiki/List_of_Unicode_characters#Latin-1_Supplement)
 apostrophe = u'\N{APOSTROPHE}'
