@@ -246,12 +246,12 @@ class Weather(callbacks.Plugin):
                'WSW', '← W', 'WNW', '↖ NW', 'NNW']
         return arr[(val % 16)]
 
-    # Credit: https://github.com/jlu5/SupyPlugins/blob/master/NuWeather/plugin.py
+    # Credit: https://github.com/jlu5/SupyPlugins/blob/7fdf95074c415bfd92488c2a1177306cd22f10eb/NuWeather/plugin.py#L261
     @lru_cache(maxsize=16)    #XXX LRU caching
     def osm_geocode(self, location):
         location = location.lower()
-        uri = f'https://nominatim.openstreetmap.org/search/{location}?format=jsonv2&\
-                accept-language="en"'
+        uri = f'https://nominatim.openstreetmap.org/search/{location}?format=jsonv2&accept-language="en"'
+        log.info(f'Weather: using url {uri} (OSM/Nominatim)')
         # User agent is required
         try:
             req = requests.get(uri, headers=headers)
@@ -341,7 +341,7 @@ class Weather(callbacks.Plugin):
         # Base URI for Openweathermap
         base_uri = ('http://api.openweathermap.org')
         url = f'{base_uri}/data/2.5/onecall?'
-        
+
         try:
             Weather = requests.get(url, params, headers=headers)
 
