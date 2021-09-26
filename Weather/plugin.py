@@ -34,15 +34,14 @@ from datetime import datetime
 from functools import lru_cache
 from requests.exceptions import HTTPError
 
-import supybot.log as log
 from supybot.commands import *
 from supybot import callbacks, ircutils
 
 #XXX Unicode symbol (https://en.wikipedia.org/wiki/List_of_Unicode_characters#Latin-1_Supplement)
-apostrophe = u'\N{APOSTROPHE}'
-degree_sign = u'\N{DEGREE SIGN}'
-# micro_sign = u'\N{MICRO SIGN}'
-percent_sign = u'\N{PERCENT SIGN}'
+apostrophe     = u'\N{APOSTROPHE}'
+degree_sign    = u'\N{DEGREE SIGN}'
+#XXX micro_sign     = u'\N{MICRO SIGN}'
+percent_sign   = u'\N{PERCENT SIGN}'
 quotation_mark = u'\N{QUOTATION MARK}'
 
 headers = {
@@ -71,7 +70,7 @@ def colour(celsius):
     return ircutils.mircColor(string, colour)
 
 #XXX Converts decimal degrees to degrees, minutes, and seconds
-@lru_cache(maxsize=16)    #XXX LRU caching
+@lru_cache(maxsize=4)    #XXX LRU caching
 def dd2dms(longitude, latitude):
     # math.modf() splits whole number and decimal into tuple
     # eg 53.3478 becomes (0.3478, 53)
@@ -92,9 +91,9 @@ def dd2dms(longitude, latitude):
 
     # repeat for latitude
     split_degy = math.modf(latitude)
-    degrees_y = int(split_degy[1])
-    minutes_y = abs(int(math.modf(split_degy[0] * 60)[1]))
-    seconds_y = abs(round(math.modf(split_degy[0] * 60)[0] * 60, 2))
+    degrees_y  = int(split_degy[1])
+    minutes_y  = abs(int(math.modf(split_degy[0] * 60)[1]))
+    seconds_y  = abs(round(math.modf(split_degy[0] * 60)[0] * 60, 2))
 
     # account for E/W & N/S
     if degrees_x < 0:
@@ -108,10 +107,24 @@ def dd2dms(longitude, latitude):
         NorS = 'N'
 
     # abs() remove negative from degrees, was only needed for if-else above
-    x = str(abs(degrees_x)) + f'{degree_sign}' + str(minutes_x) + \
-        f'{apostrophe} ' + str(seconds_x) + f'{quotation_mark} ' + EorW
-    y = str(abs(degrees_y)) + f'{degree_sign}' + str(minutes_y) + \
-        f'{apostrophe} ' + str(seconds_y) + f'{quotation_mark} ' + NorS
+    x = (
+        str(abs(degrees_x))
+        + f"{degree_sign}"
+        + str(minutes_x)
+        + f"{apostrophe} "
+        + str(seconds_x)
+        + f"{quotation_mark} "
+        + EorW
+    )
+    y = (
+        str(abs(degrees_y))
+        + f"{degree_sign}"
+        + str(minutes_y)
+        + f"{apostrophe} "
+        + str(seconds_y)
+        + f"{quotation_mark} "
+        + NorS
+    )
     return (x, y)
 
 class Weather(callbacks.Plugin):
@@ -130,19 +143,19 @@ class Weather(callbacks.Plugin):
         """
         Gather all the data - format it
         """
-        log.info(f'Weather: format_weather_output {location}')
+        self.log.info(f'Weather: format_weather_output {location}')
 
         current    = data['current']
         icon       = current['weather'][0].get('icon')
         staticon   = self._get_status_icon(icon)
         (LON, LAT) = dd2dms(data['lon'], data['lat'])
         # current
-        cloud     = current['clouds']
-        arrow     = self._get_wind_direction(current['wind_deg'])
-        feelslike = round(current['feels_like'])
-        humid     = current['humidity']
-        atmos     = current['pressure']
-        dp = round(current['dew_point'])
+        cloud      = current['clouds']
+        arrow      = self._get_wind_direction(current['wind_deg'])
+        feelslike  = round(current['feels_like'])
+        humid      = current['humidity']
+        atmos      = current['pressure']
+        dp         = round(current['dew_point'])
         try:
             precip = data['hourly'][0]['rain'].get('1h')
             precipico = '☔'
@@ -157,6 +170,7 @@ class Weather(callbacks.Plugin):
         # weather
         desc   = current['weather'][0].get('description')
         wind   = round(current['wind_speed'])
+
         try:
             gust = round(current['wind_gust'])
         except KeyError:
@@ -179,9 +193,9 @@ class Weather(callbacks.Plugin):
         # Formatted output
         a = f'🏠 {location} :: UTC {utc} :: Lat {LAT} Lon {LON} :: {staticon} {desc} '
         b = f'| 🌡 Barometric {atmos}hPa | Dew Point {dp}°C | ☁ Cloud cover {cloud}{percent_sign} '
-        c = f'| {precipico} Precip {precip}mmh | 💦 Humidity {humid}{percent_sign} | Current {colour(temp)} '
+        c = f'| {precipico} Precip {precip}mm/h | 💦 Humidity {humid}{percent_sign} | Current {colour(temp)} '
         d = f'| Feels like {colour(feelslike)} | 🍃 Wind {wind}Km/H {arrow} '
-        e = f'| 💨 Gust {gust}m/s | 👁 Visibility {vis}Km | {uvicon} UVI {uvi} '
+        e = f'| 💨 Gust {gust}m/s | 👁 Visibility {vis}Km | UVI {uvi} {uvicon} '
         f = f'| {day1name}: {day1weather} Max {colour(day1highC)} Min {colour(day1lowC)} '
         g = f'| {day2name}: {day2weather} Max {colour(day2highC)} Min {colour(day2lowC)}.'
 
@@ -248,11 +262,11 @@ class Weather(callbacks.Plugin):
         return arr[(val % 16)]
 
     # Credit: https://github.com/jlu5/SupyPlugins/blob/7fdf95074c415bfd92488c2a1177306cd22f10eb/NuWeather/plugin.py#L261
-    @lru_cache(maxsize=16)    #XXX LRU caching
+    @lru_cache(maxsize=4)    #XXX LRU caching
     def osm_geocode(self, location):
         location = location.lower()
         uri = f'https://nominatim.openstreetmap.org/search/{location}?format=jsonv2&accept-language="en"'
-        log.info(f'Weather: using url {uri} (OSM/Nominatim)')
+        self.log.info(f'Weather: using url {uri} (OSM/Nominatim)')
         # User agent is required
         try:
             req = requests.get(uri, headers=headers)
@@ -262,7 +276,7 @@ class Weather(callbacks.Plugin):
 
             data = req.json()
         except HTTPError as http_err:
-            log.debug(f'Weather: error {http_err} searching for {location} from OSM/Nominatim:',
+            self.log.debug(f'Weather: error {http_err} searching for {location} from OSM/Nominatim:',
                       exc_info=True)
             data = None
         if not data:
@@ -287,11 +301,6 @@ class Weather(callbacks.Plugin):
             osm_id = ''
         return (lat, lon, display_name, osm_id, 'OSM/Nominatim')
 
-    #XXX For future use
-    # def owm_weather(self, location):
-    #     """OpenWeatherMap API"""
-    #     pass
-
     @staticmethod
     def _query_location(location):
         numbers = re.findall('[0-9]+', location)
@@ -307,9 +316,13 @@ class Weather(callbacks.Plugin):
     @wrap(['text'])
     def weather(self, irc, msg, args, location):
         """
-        [<city> <country code>] ][<postcode, country code>]
-        Get weather information for a town or city.
-        I.E. weather Ballarat or Ballarat AU OR 3350, AU
+        Get weather information for a town or city for the current day.
+
+        [city <(Alpha-2) country code>] [<postcode, (Alpha-2) country code>] [latitude, longitude]
+
+        I.E. `weather` Ballarat or Ballarat AU OR 3350, AU or `weather` -37.5303188, 143.8297033
+
+         | `lookup` [city <(Alpha-2) country code>] to get latitude and longitude of a city/town.
         """
         location = location.lower()
 
@@ -323,7 +336,7 @@ class Weather(callbacks.Plugin):
         if not self.registryValue('enable', msg.channel, irc.network):
             return
 
-        log.info(f'Weather: running on {irc.network}/{msg.channel}')
+        self.log.info(f'Weather: running on {irc.network}/{msg.channel}')
 
         # Check for a postcode
         self._query_location(location)
@@ -333,10 +346,10 @@ class Weather(callbacks.Plugin):
 
         # Get the weather data
         params = {
-            'lat': latitude,
-            'lon': longitude,
-            'appid': apikey,
-            'units': 'metric',
+            'lat':     latitude,
+            'lon':     longitude,
+            'appid':   apikey,
+            'units':   'metric',
             'exclude': 'minutely'
         }
         # Base URI for Openweathermap
@@ -349,11 +362,11 @@ class Weather(callbacks.Plugin):
             # If the response was successful, no Exception will be raised
             Weather.raise_for_status()
         except HTTPError as http_err:
-            log.error(f'Weather: HTTP error occurred: {http_err}',
+            self.log.error(f'Weather: HTTP error occurred: {http_err}',
                     exc_info=True)
             raise callbacks.Error(f'Weather: HTTP error occurred: {http_err}')
         except Exception as err:
-            log.error(f'Weather: an error occurred: {err}',
+            self.log.error(f'Weather: an error occurred: {err}',
                     exc_info=True)
             raise callbacks.Error(f'Weather: an error occurred: {err}')
         else:
