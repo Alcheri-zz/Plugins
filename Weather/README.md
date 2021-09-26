@@ -25,8 +25,8 @@ Configure your bot:
 Using:
 =====
 
-[prefix] weather [city <(Alpha-2) country code>] [<postcode, (Alpha-2) country code>]\
-[prefix] lookup&nbsp; [city <(Alpha-2) country code>]
+[prefix] weather [city <(Alpha-2) country code>] [<postcode, (Alpha-2) country code>] [latitude, longitude]\
+[prefix] lookup&nbsp; [city <(Alpha-2) country code>] -- To get latitude and longitude of a city/town.
 
 
 **Note:** [prefix] may be set via `config reply.whenAddressedBy.chars`
