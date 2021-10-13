@@ -132,10 +132,12 @@ class IMDb(callbacks.Plugin):
         channel = msg.channel
         if not channel:
             return
-        # Check if we should be 'disabled' in a channel.
-        # config channel #channel plugins.IMBd.enable True or False (or On or Off)
-        if not self.registryValue('enable', channel):
+
+        #XXX Not 'enabled' in #channel.
+        # config channel #channel plugins.IMBd.enable True or False (On or Off)
+        if not self.registryValue('enable', msg.channel, irc.network):
             return
+
         url = None
         response = None
         result = None
