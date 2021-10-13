@@ -17,7 +17,8 @@ Setting up:
 ==========
 
 * The following libraries are required. Run the command (below) from the Weatherstack folder to install.
-* pgeocode   Python library for high performance off-line querying of GPS coordinates.
+* pgeocode: Python library for high performance off-line querying of GPS coordinates.
+* ephem: Python package for performing high-precision astronomy computations.
 * `pip3 install -r requirements.txt`
 
 Configure your bot:
