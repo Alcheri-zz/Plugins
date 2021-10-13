@@ -34,6 +34,7 @@ from datetime import datetime
 from functools import lru_cache
 from requests.exceptions import HTTPError
 
+import supybot.log as log
 from supybot.commands import *
 from supybot import callbacks, ircutils
 
@@ -143,7 +144,7 @@ class Weather(callbacks.Plugin):
         """
         Gather all the data - format it
         """
-        self.log.info(f'Weather: format_weather_output {location}')
+        log.info(f'Weather: format_weather_output {location}')
 
         current    = data['current']
         icon       = current['weather'][0].get('icon')
@@ -163,7 +164,7 @@ class Weather(callbacks.Plugin):
             precip = 0
             precipico = ''
         temp   = round(current['temp'])
-        vis    = (current['visibility'] / 1000)
+        vis    = round((current['visibility'] / 1000))
         uvi    = round(current['uvi'])
         uvicon = self._format_uvi_icon(uvi)
         utc    = (data['timezone_offset']/3600)
@@ -257,8 +258,24 @@ class Weather(callbacks.Plugin):
         num = degrees
         val = int((num/22.5)+.5)
         # Decorated output
-        arr = ['↑ N', 'NNE', '↗ NE', 'ENE', '→ E', 'ESE', '↘ SE', 'SSE', '↓ S', 'SSW', '↙ SW',
-               'WSW', '← W', 'WNW', '↖ NW', 'NNW']
+        arr = [
+            '↑ N',
+            'NNE',
+            '↗ NE',
+            'ENE',
+            '→ E',
+            'ESE',
+            '↘ SE',
+            'SSE',
+            '↓ S',
+            'SSW',
+            '↙ SW',
+            'WSW',
+            '← W',
+            'WNW',
+            '↖ NW',
+            'NNW'
+        ]
         return arr[(val % 16)]
 
     # Credit: https://github.com/jlu5/SupyPlugins/blob/7fdf95074c415bfd92488c2a1177306cd22f10eb/NuWeather/plugin.py#L261
@@ -266,7 +283,7 @@ class Weather(callbacks.Plugin):
     def osm_geocode(self, location):
         location = location.lower()
         uri = f'https://nominatim.openstreetmap.org/search/{location}?format=jsonv2&accept-language="en"'
-        self.log.info(f'Weather: using url {uri} (OSM/Nominatim)')
+        log.info(f'Weather: using url {uri} (OSM/Nominatim)')
         # User agent is required
         try:
             req = requests.get(uri, headers=headers)
@@ -336,7 +353,7 @@ class Weather(callbacks.Plugin):
         if not self.registryValue('enable', msg.channel, irc.network):
             return
 
-        self.log.info(f'Weather: running on {irc.network}/{msg.channel}')
+        log.info(f'Weather: running on {irc.network}/{msg.channel}')
 
         # Check for a postcode
         self._query_location(location)
