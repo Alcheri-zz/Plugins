@@ -40,7 +40,8 @@ from datetime import datetime
 from functools import lru_cache
 from requests.exceptions import HTTPError
 
-from supybot import callbacks, conf, ircutils
+from supybot import callbacks, ircutils
+import supybot.log as log
 from supybot.commands import *
 
 try:
@@ -82,16 +83,23 @@ def colour(celsius):
 
 def day(lat, lon):
     home      = ephem.Observer()
-    home.lat  = str(lat)           # str() Latitude
-    home.lon  = str(lon)           # str() Longitude
+    home.lat  = ephem.degrees(lat)           # str() Latitude
+    home.lon  = ephem.degrees(lon)           # str() Longitude
 
-    next_sunrise  = home.next_rising(ephem.Sun()).datetime()
-    next_sunset   = home.next_setting(ephem.Sun()).datetime()
+    sun = ephem.Sun()
+
+    log.info(f'Weatherstack [day]: lat: {home.lat} lon: {home.lon}')
 
     day = ''
-    if next_sunset < next_sunrise:
-        day = True
-    else:
+
+    try:
+        next_sunrise = home.next_rising(sun).datetime()
+        next_sunset  = home.next_setting(sun).datetime()
+        if next_sunset < next_sunrise:
+          day = True
+        else:
+          day = False
+    except ephem.NeverUpError:
         day = False
     return day
 
@@ -205,6 +213,8 @@ class Weatherstack(callbacks.Plugin):
         visibility   = response['current']['visibility']
 
         uvi_icon     = self._format_uvi_icon(uvi)
+
+        self.log.info(f'Weatherstack[format_weather_output]: {city_name} lat {lat} lon {lon}')
 
         # Get weather_code from Weatherstack
         if not day(location['lat'], location['lon']):
