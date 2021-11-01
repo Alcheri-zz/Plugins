@@ -6,7 +6,7 @@ Returns the ip of <hostname | URL | nick | IPv4 or IPv6> or the reverse DNS host
 Configuring:
 ===========
 
-This plugin uses ipstack to get data. An API (free) key is required.
+This plugin uses ipstack to get data. An API (free) key is required.\
 Get an API key: [ipstack](https://ipstack.com/)
 
 Unload the Internet plugin as it conflicts with this plugin:
