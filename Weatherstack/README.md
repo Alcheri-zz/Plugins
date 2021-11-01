@@ -8,6 +8,7 @@ Configuring:
 ===========
 
 This plugin uses WeatherStack to get data. A free API key is required.
+The weather output is for the current date in a location ONLY!
 Get an API key: [WeatherStack](https://weatherstack.com//)
 
 This plugin uses positionstack to get data. A free API key is required.
