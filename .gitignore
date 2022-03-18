@@ -10,3 +10,4 @@ test-logs
 *.mo
 *.komodoproject
 README.txt
+limnoria.code-workspace
